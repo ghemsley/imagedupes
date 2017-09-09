@@ -1,5 +1,13 @@
 #!/usr/bin/python3
 
+def checkHashAlgorithmChoice(__algorithmString):
+
+    from sys import exit
+    __acceptableChoices = ['dhash', 'dhash_vertical', 'average_hash', 'phash', 'phash_simple', 'whash']
+    if __algorithmString not in __acceptableChoices:
+        print("Error: please choose a valid hash algorithm")
+        exit()
+
 def getImagePaths(__dirPath):
     "Creates a list of image paths within a given directory"
 
@@ -14,10 +22,15 @@ def getImagePaths(__dirPath):
                 __filePathList.append(os.path.join(__root, __file))
     return __filePathList
 
-def generateHashDict(__imagePathList):
+def generateHashDict(__imagePathList, __hashAlgorithm):
 
     from PIL import Image
+    from imagehash import dhash
+    from imagehash import dhash_vertical
+    from imagehash import average_hash
     from imagehash import phash
+    from imagehash import phash_simple
+    from imagehash import whash
 
     __imageHashDict = {}
     __image = None
@@ -25,7 +38,20 @@ def generateHashDict(__imagePathList):
     for __imagePath in __imagePathList:
         print("Hashing " + str(__imagePath))
         __image = Image.open(__imagePath)
-        __imageHashDict[__imagePath] = phash(__image)
+        if __hashAlgorithm == 'dhash':
+            __imageHashDict[__imagePath] = dhash(__image)
+        elif __hashAlgorithm == 'dhash_vertical':
+            __imageHashDict[__imagePath] = dhash_vertical(__image)
+        elif __hashAlgorithm == 'average_hash':
+            __imageHashDict[__imagePath] = average_hash(__image)
+        elif __hashAlgorithm == 'phash':
+            __imageHashDict[__imagePath] = phash(__image)
+        elif __hashAlgorithm == 'phash_simple':
+            __imageHashDict[__imagePath] = phash_simple(__image)
+        elif __hashAlgorithm == 'whash':
+            __imageHashDict[__imagePath] = whash(__image)
+        elif __hashAlgorithm == None:
+            __imageHashDict[__imagePath] = phash(__image)
         __image.close
 
     return __imageHashDict
@@ -45,8 +71,6 @@ def compareHashes(__imageHashDict):
     return __duplicateListOfLists
 
 def storeDuplicates(__duplicateListOfLists):
-
-    from PIL import Image
 
     __imageList = []
 
@@ -70,12 +94,15 @@ def main():
 
     __parser = ArgumentParser()
     __parser.add_argument("-d", "--directory", help="Directory to search for images")
+    __parser.add_argument("-a", "--algorithm", type=str, help="Specify a hash algorithm to use. Acceptable inputs:\n'dhash' (horizontal difference hash),\n'dhash_vertical',\n'average_hash',\n'phash' (perceptual hash),\n'phash_simple',\n'whash' (wavelet hash)")
     __args = __parser.parse_args()
 
+    if __args.algorithm is not None:
+        checkHashAlgorithmChoice(__args.algorithm)
     if __args.directory is not None:
-        displayImage(storeDuplicates(compareHashes(generateHashDict(getImagePaths(__args.directory)))))
+        displayImage(storeDuplicates(compareHashes(generateHashDict(getImagePaths(__args.directory), __args.algorithm))))
     else:
-        displayImage(storeDuplicates(compareHashes(generateHashDict(getImagePaths(os.path.curdir)))))
+        displayImage(storeDuplicates(compareHashes(generateHashDict(getImagePaths(os.path.curdir), __args.algorithm))))
     exit()
 
 main()
