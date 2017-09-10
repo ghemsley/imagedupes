@@ -18,7 +18,10 @@ def getImagePaths(__dirPath):
     print("Searching for duplicate images...")
     for __root, __dirs, __files in os.walk(__dirPath, followlinks=True):
         for __file in __files:
-            if str(__file).endswith(".jpg") or str(__file).endswith(".jpeg") or str(__file).endswith(".png"):
+            if str(__file).endswith(".jpg") or str(__file).endswith(".jpeg") \
+            or str(__file).endswith(".png") or str(__file).endswith(".tif") \
+            or str(__file).endswith(".tiff") or str(__file).endswith(".webp")\
+            or str(__file).endswith(".bmp"):
                 __filePathList.append(os.path.join(__root, __file))
     return __filePathList
 
