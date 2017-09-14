@@ -3,12 +3,13 @@
 def checkHashAlgorithmChoice(__algorithmString):
 
     from sys import exit
+
     __acceptableChoices = ['dhash', 'dhash_vertical', 'average_hash', 'phash', 'phash_simple', 'whash']
     if __algorithmString not in __acceptableChoices:
-        print("Error: please choose a valid hash algorithm")
+        print("Error: please choose a valid hash. Use the -h command line flag for help.")
         exit()
 
-def getImagePaths(__dirPath):
+def getImagePaths(__dirPath, __recursiveBoolean, __followLinksBoolean):
     "Creates a list of image paths within a given directory"
 
     import os
@@ -16,13 +17,21 @@ def getImagePaths(__dirPath):
     __filePathList = []
 
     print("Searching for duplicate images...")
-    for __root, __dirs, __files in os.walk(__dirPath, followlinks=True):
-        for __file in __files:
-            if str(__file).endswith(".jpg") or str(__file).endswith(".jpeg") \
-            or str(__file).endswith(".png") or str(__file).endswith(".tif") \
+    if __recursiveBoolean == True:
+        for __root, __dirs, __files in os.walk(__dirPath, followlinks=__followLinksBoolean):
+            for __file in __files:
+                if str(__file).endswith(".jpg") or str(__file).endswith(".jpeg")\
+                or str(__file).endswith(".png") or str(__file).endswith(".tif")\
+                or str(__file).endswith(".tiff") or str(__file).endswith(".webp")\
+                or str(__file).endswith(".bmp"):
+                    __filePathList.append(os.path.join(__root, __file))
+    else:
+        for __file in os.listdir():
+            if str(__file).endswith(".jpg") or str(__file).endswith(".jpeg")\
+            or str(__file).endswith(".png") or str(__file).endswith(".tif")\
             or str(__file).endswith(".tiff") or str(__file).endswith(".webp")\
             or str(__file).endswith(".bmp"):
-                __filePathList.append(os.path.join(__root, __file))
+                __filePathList.append(os.path.abspath(__file))
     return __filePathList
 
 def generateHashDict(__imagePathList, __hashAlgorithm):
@@ -79,7 +88,7 @@ def storeDuplicates(__duplicateListOfLists):
 
     for __i in range(0, len(__duplicateListOfLists)):
         for __j in range(0, len(__duplicateListOfLists[__i])):
-            print("Found duplicate: " + str(__duplicateListOfLists[__i][__j]))
+            print("Found possible duplicate: " + str(__duplicateListOfLists[__i][__j]))
             __imageList.append(__duplicateListOfLists[__i][__j])
     return __imageList
 
@@ -93,19 +102,24 @@ def displayImage(__imageList):
 def main():
 
     from argparse import ArgumentParser
+    import os
     from sys import exit
 
-    __parser = ArgumentParser()
+    __recursive = False
+
+    __parser = ArgumentParser(description="Finds visually similar images and opens them in the default image file handler. If no options are specified, it defaults to searching the current working directory non-recursively using a perceptual image hash algorithm and does not follow symbolic links.")
     __parser.add_argument("-d", "--directory", help="Directory to search for images")
     __parser.add_argument("-a", "--algorithm", type=str, help="Specify a hash algorithm to use. Acceptable inputs:\n'dhash' (horizontal difference hash),\n'dhash_vertical',\n'average_hash',\n'phash' (perceptual hash),\n'phash_simple',\n'whash' (wavelet hash)")
+    __parser.add_argument("-r", "--recursive", action="store_true", help="Search through directories recursively")
+    __parser.add_argument("-l", "--links", action="store_true", help="Follow symbolic links")
     __args = __parser.parse_args()
 
     if __args.algorithm is not None:
         checkHashAlgorithmChoice(__args.algorithm)
     if __args.directory is not None:
-        displayImage(storeDuplicates(compareHashes(generateHashDict(getImagePaths(__args.directory), __args.algorithm))))
+        displayImage(storeDuplicates(compareHashes(generateHashDict(getImagePaths(__args.directory, __args.recursive, __args.links), __args.algorithm))))
     else:
-        displayImage(storeDuplicates(compareHashes(generateHashDict(getImagePaths(os.path.curdir), __args.algorithm))))
+        displayImage(storeDuplicates(compareHashes(generateHashDict(getImagePaths(os.path.curdir, __args.recursive, __args.links), __args.algorithm))))
     exit()
 
 main()
