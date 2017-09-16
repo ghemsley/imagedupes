@@ -20,17 +20,17 @@ def getImagePaths(__dirPath, __recursiveBoolean, __followLinksBoolean):
     if __recursiveBoolean == True:
         for __root, __dirs, __files in os.walk(__dirPath, followlinks=__followLinksBoolean):
             for __file in __files:
-                if str(__file).endswith(".jpg") or str(__file).endswith(".jpeg")\
-                or str(__file).endswith(".png") or str(__file).endswith(".tif")\
-                or str(__file).endswith(".tiff") or str(__file).endswith(".webp")\
-                or str(__file).endswith(".bmp"):
+                if str(__file).lower().endswith(".jpg") or str(__file).lower().endswith(".jpeg")\
+                or str(__file).lower().endswith(".png") or str(__file).lower().endswith(".tif")\
+                or str(__file).lower().endswith(".tiff") or str(__file).lower().endswith(".webp")\
+                or str(__file).lower().endswith(".bmp"):
                     __filePathList.append(os.path.join(__root, __file))
     else:
         for __file in os.listdir():
-            if str(__file).endswith(".jpg") or str(__file).endswith(".jpeg")\
-            or str(__file).endswith(".png") or str(__file).endswith(".tif")\
-            or str(__file).endswith(".tiff") or str(__file).endswith(".webp")\
-            or str(__file).endswith(".bmp"):
+            if str(__file).lower().endswith(".jpg") or str(__file).lower().endswith(".jpeg")\
+            or str(__file).lower().endswith(".png") or str(__file).lower().endswith(".tif")\
+            or str(__file).lower().endswith(".tiff") or str(__file).lower().endswith(".webp")\
+            or str(__file).lower().endswith(".bmp"):
                 __filePathList.append(os.path.abspath(__file))
     return __filePathList
 
