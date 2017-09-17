@@ -6,7 +6,7 @@ def checkHashAlgorithmChoice(__algorithmString):
 
     __acceptableChoices = ['dhash', 'dhash_vertical', 'average_hash', 'phash', 'phash_simple', 'whash']
     if __algorithmString not in __acceptableChoices:
-        print("Error: please choose a valid hash. Use the -h command line flag for help.")
+        print("Error: please choose a valid hash algorithm. Use the -h command line flag for help.")
         exit()
 
 def getImagePaths(__dirPath, __recursiveBoolean, __followLinksBoolean):
@@ -26,12 +26,12 @@ def getImagePaths(__dirPath, __recursiveBoolean, __followLinksBoolean):
                 or str(__file).lower().endswith(".bmp"):
                     __filePathList.append(os.path.join(__root, __file))
     else:
-        for __file in os.listdir():
+        for __file in os.listdir(__dirPath):
             if str(__file).lower().endswith(".jpg") or str(__file).lower().endswith(".jpeg")\
             or str(__file).lower().endswith(".png") or str(__file).lower().endswith(".tif")\
             or str(__file).lower().endswith(".tiff") or str(__file).lower().endswith(".webp")\
             or str(__file).lower().endswith(".bmp"):
-                __filePathList.append(os.path.abspath(__file))
+                __filePathList.append(os.path.join(__dirPath, __file))
     return __filePathList
 
 def generateHashDict(__imagePathList, __hashAlgorithm):
@@ -82,22 +82,21 @@ def compareHashes(__imageHashDict):
         __duplicateListOfLists.append(list(__duplicateListOfSets[__i]))
     return __duplicateListOfLists
 
-def storeDuplicates(__duplicateListOfLists):
+def printDuplicates(__imageListOfLists):
 
-    __imageList = []
+    for __i in range(0, len(__imageListOfLists)):
+        for __j in range(0, len(__imageListOfLists[__i])):
+            print("Found possible duplicate: " + str(__imageListOfLists[__i][__j]))
+    return __imageListOfLists
 
-    for __i in range(0, len(__duplicateListOfLists)):
-        for __j in range(0, len(__duplicateListOfLists[__i])):
-            print("Found possible duplicate: " + str(__duplicateListOfLists[__i][__j]))
-            __imageList.append(__duplicateListOfLists[__i][__j])
-    return __imageList
-
-def displayImage(__imageList):
+def displayImage(__imageListOfLists):
 
     import webbrowser
 
-    for __image in __imageList:
-        webbrowser.open(__image)
+    for __i in range(0, len(__imageListOfLists)):
+        for __j in range(0, len(__imageListOfLists[__i])):
+            webbrowser.open(__imageListOfLists[__i][__j])
+        input("Press enter to open the next set of possible duplicates: ")
 
 def main():
 
@@ -117,9 +116,9 @@ def main():
     if __args.algorithm is not None:
         checkHashAlgorithmChoice(__args.algorithm)
     if __args.directory is not None:
-        displayImage(storeDuplicates(compareHashes(generateHashDict(getImagePaths(__args.directory, __args.recursive, __args.links), __args.algorithm))))
+        displayImage(printDuplicates(compareHashes(generateHashDict(getImagePaths(__args.directory, __args.recursive, __args.links), __args.algorithm))))
     else:
-        displayImage(storeDuplicates(compareHashes(generateHashDict(getImagePaths(os.path.curdir, __args.recursive, __args.links), __args.algorithm))))
+        displayImage(printDuplicates(compareHashes(generateHashDict(getImagePaths(os.path.curdir, __args.recursive, __args.links), __args.algorithm))))
     exit()
 
 main()
