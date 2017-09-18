@@ -19,7 +19,7 @@ optional arguments:
                         'dhash' (horizontal difference hash),
                         'dhash_vertical', 'ahash' (average hash), 'phash'
                         (perceptual hash), 'phash_simple', 'whash_haar' (Haar
-                        wavelet hash), 'whash_db4' (Debauchles wavelet hash).
+                        wavelet hash), 'whash_db4' (Daubechles wavelet hash).
                         Defaults to 'phash' if not specified.
   -d DIRECTORY, --directory DIRECTORY
                         Directory to search for images
