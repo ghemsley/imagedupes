@@ -10,8 +10,9 @@ usage: imagedupes [-h] [-a ALGORITHM] [-d DIRECTORY] [-l] [-o OPTIONS]
 Finds visually similar images and opens them in the default image file
 handler, one group of matches at a time. If no options are specified, it
 defaults to searching the current working directory non-recursively using a
-perceptual image hash algorithm with a hash size of 8 and does not follow
-symbolic links.
+perceptual image hash algorithm with a hash size of 8, opens images in the
+system default image handler (all at once), and does not follow symbolic
+links.
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -29,10 +30,11 @@ optional arguments:
                         specified.
   -o OPTIONS, --options OPTIONS
                         Option parameters to pass to the program opened by the
-                        --program flag.
+                        --program flag. Defaults to no options if not
+                        specified.
   -p PROGRAM, --program PROGRAM
                         Program to open the matched images with. Defaults to
-                        your system's default image viewer if not specified.
+                        your system's default image handler if not specified.
   -r, --recursive       Search through directories recursively. Defaults to
                         off if not specified.
   -s HASH_SIZE, --hash_size HASH_SIZE

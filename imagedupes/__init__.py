@@ -116,12 +116,12 @@ def main():
 
     __recursive = False
 
-    __parser = ArgumentParser(description="Finds visually similar images and opens them in the default image file handler, one group of matches at a time. If no options are specified, it defaults to searching the current working directory non-recursively using a perceptual image hash algorithm with a hash size of 8 and does not follow symbolic links.")
+    __parser = ArgumentParser(description="Finds visually similar images and opens them in the default image file handler, one group of matches at a time. If no options are specified, it defaults to searching the current working directory non-recursively using a perceptual image hash algorithm with a hash size of 8, opens images in the system default image handler (all at once), and does not follow symbolic links.")
     __parser.add_argument("-a", "--algorithm", type=str, help="Specify a hash algorithm to use. Acceptable inputs:\n'dhash' (horizontal difference hash),\n'dhash_vertical',\n'ahash' (average hash),\n'phash' (perceptual hash),\n'phash_simple',\n'whash_haar' (Haar wavelet hash),\n'whash_db4' (Daubechles wavelet hash). Defaults to 'phash' if not specified.")
     __parser.add_argument("-d", "--directory", type=str, help="Directory to search for images. Defaults to the current working directory if not specified.")
     __parser.add_argument("-l", "--links", action="store_true", help="Follow symbolic links. Defaults to off if not specified.")
-    __parser.add_argument("-o", "--options", type=str, help="Option parameters to pass to the program opened by the --program flag.")
-    __parser.add_argument("-p", "--program", type=str, help="Program to open the matched images with. Defaults to your system's default image viewer if not specified.")
+    __parser.add_argument("-o", "--options", type=str, help="Option parameters to pass to the program opened by the --program flag. Defaults to no options if not specified.")
+    __parser.add_argument("-p", "--program", type=str, help="Program to open the matched images with. Defaults to your system's default image handler if not specified.")
     __parser.add_argument("-r", "--recursive", action="store_true", help="Search through directories recursively. Defaults to off if not specified.")
     __parser.add_argument("-s", "--hash_size", type=int, help="Resolution of the hash; higher is more sensitive to differences. Must be a power of 2 (2, 4, 8, 16...). Defaults to 8 if not specified. Values lower than 8 may not work with some hash algorithms.")
     __args = __parser.parse_args()
