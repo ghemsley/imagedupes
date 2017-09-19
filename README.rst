@@ -4,7 +4,8 @@ imagedupes
 --------------------------------------------------------
 Python 3 application for finding visually similar images
 --------------------------------------------------------
-usage: imagedupes [-h] [-a ALGORITHM] [-d DIRECTORY] [-l] [-r] [-s HASH_SIZE]
+usage: imagedupes [-h] [-a ALGORITHM] [-d DIRECTORY] [-l] [-o OPTIONS]
+                  [-p PROGRAM] [-r] [-s HASH_SIZE]
 
 Finds visually similar images and opens them in the default image file
 handler, one group of matches at a time. If no options are specified, it
@@ -22,12 +23,20 @@ optional arguments:
                         wavelet hash), 'whash_db4' (Daubechles wavelet hash).
                         Defaults to 'phash' if not specified.
   -d DIRECTORY, --directory DIRECTORY
-                        Directory to search for images
+                        Directory to search for images. Defaults to the
+                        current working directory if not specified.
   -l, --links           Follow symbolic links. Defaults to off if not
                         specified.
+  -o OPTIONS, --options OPTIONS
+                        Option parameters to pass to the program opened by the
+                        --program flag.
+  -p PROGRAM, --program PROGRAM
+                        Program to open the matched images with. Defaults to
+                        your system's default image viewer if not specified.
   -r, --recursive       Search through directories recursively. Defaults to
                         off if not specified.
   -s HASH_SIZE, --hash_size HASH_SIZE
-                        Resolution of the hash; higher is more CPU intensive
-                        and more sensitive to differences. Must be a power of
-                        2 (2, 4, 8, 16...). Defaults to 8 if not specified.
+                        Resolution of the hash; higher is more sensitive to
+                        differences. Must be a power of 2 (2, 4, 8, 16...).
+                        Defaults to 8 if not specified. Values lower than 8
+                        may not work with some hash algorithms.
