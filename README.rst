@@ -4,8 +4,8 @@ imagedupes
 --------------------------------------------------------
 Python 3 application for finding visually similar images
 --------------------------------------------------------
-usage: __init__.py [-h] [-a ALGORITHM] [-d DIRECTORY] [-l] [-o OPTIONS]
-                   [-p PROGRAM] [-r] [-R] [-s HASH_SIZE]
+usage: imagedupes [-h] [-a ALGORITHM] [-d DIRECTORY] [-l] [-o OPTIONS]
+                  [-p PROGRAM] [-r] [-R] [-s HASH_SIZE]
 
 Finds visually similar images and opens them in an image viewer, one group of
 matches at a time. If no options are specified, it defaults to searching the
