@@ -11,7 +11,8 @@ Finds visually similar images and opens them in an image viewer, one group of
 matches at a time. If no options are specified, it defaults to searching the
 current working directory non-recursively using a perceptual image hash
 algorithm with a hash size of 8, opens images in the system default image
-handler (all at once), and does not follow symbolic links.
+handler (all at once), and does not follow symbolic links or use a persistent
+database.
 
 optional arguments:
   -h, --help            show this help message and exit

@@ -7,7 +7,7 @@ def createArgumentParser():
     __args = None
     __parser = None
 
-    __parser = ArgumentParser(description="Finds visually similar images and opens them in an image viewer, one group of matches at a time. If no options are specified, it defaults to searching the current working directory non-recursively using a perceptual image hash algorithm with a hash size of 8, opens images in the system default image handler (all at once), and does not follow symbolic links.")
+    __parser = ArgumentParser(description="Finds visually similar images and opens them in an image viewer, one group of matches at a time. If no options are specified, it defaults to searching the current working directory non-recursively using a perceptual image hash algorithm with a hash size of 8, opens images in the system default image handler (all at once), and does not follow symbolic links or use a persistent database.")
     __parser.add_argument("-a", "--algorithm", type=str, help="Specify a hash algorithm to use. Acceptable inputs:\n'dhash' (horizontal difference hash),\n'dhash_vertical',\n'ahash' (average hash),\n'phash' (perceptual hash),\n'phash_simple',\n'whash_haar' (Haar wavelet hash),\n'whash_db4' (Daubechles wavelet hash). Defaults to 'phash' if not specified.")
     __parser.add_argument("-d", "--directory", type=str, help="Directory to search for images. Defaults to the current working directory if not specified.")
     __parser.add_argument("-D", "--database", type=str, help="Use a database to cache hash results and speed up hash comparisons. Argument should be the path to which you want to save or read from the database. Warning: runnning the program multiple times with the same database but a different hash algorithm will lead to problems. Defaults to no database if not specified.")
@@ -150,19 +150,11 @@ def readDatabase(__databasePath):
 
     if __databasePath is not None:
         if path.exists(__databasePath):
+            print("Reading from database at " + __databasePath)
             with shelve.open(__databasePath, writeback=True) as __db:
                 for __key in __db:
                     __imageHashDict[__key] = __db[__key]
     return __imageHashDict
-
-def writeDatabase(__databasePath, __imageHashDict):
-
-    import shelve
-
-    if __databasePath is not None:
-        with shelve.open(__databasePath) as __db:
-            for __key in __imageHashDict:
-                __db[__key] = __imageHashDict[__key]
 
 def checkRaw(__imagePath):
 
@@ -176,7 +168,6 @@ def checkRaw(__imagePath):
 
 def generateHash(__hashAlgorithmString, __imageHashDict, __imagePath, __image, __hashSizeInt):
 
-    from PIL import Image
     from imagehash import dhash
     from imagehash import dhash_vertical
     from imagehash import average_hash
@@ -202,6 +193,15 @@ def generateHash(__hashAlgorithmString, __imageHashDict, __imagePath, __image, _
         __imageHashDict[__imagePath] = phash(__image, hash_size=__hashSizeInt)
     return __imageHashDict
 
+def writeDatabase(__databasePath, __imageHashDict):
+
+    import shelve
+
+    if __databasePath is not None:
+        with shelve.open(__databasePath) as __db:
+            for __key in __imageHashDict:
+                __db[__key] = __imageHashDict[__key]
+
 def generateHashDict(__imagePathList, __hashAlgorithmString, __hashSizeInt, __databasePath, __imageHashDict):
 
     from os import path
@@ -209,40 +209,13 @@ def generateHashDict(__imagePathList, __hashAlgorithmString, __hashSizeInt, __da
     from rawpy import imread
     from imageio import imsave
     from PIL import Image
-    from imagehash import dhash
-    from imagehash import dhash_vertical
-    from imagehash import average_hash
-    from imagehash import phash
-    from imagehash import phash_simple
-    from imagehash import whash
-    import shelve
 
     __image = None
 
     if __hashSizeInt == None:
         __hashSizeInt = 8
     for __imagePath in __imagePathList:
-        if __imageHashDict is not None:
-            if __imagePath not in __imageHashDict.keys():
-                print("Hashing " + str(__imagePath))
-                if checkRaw(__imagePath):
-                    if path.isfile(__imagePath + ".jpg"):
-                        with Image.open(__imagePath + ".jpg") as __image:
-                            __imageHashDict = generateHash(__hashAlgorithmString, __imageHashDict, __imagePath, __image, __hashSizeInt)
-                            writeDatabase(__databasePath, __imageHashDict)
-                    else:
-                        __image = imread(__imagePath)
-                        __image = __image.postprocess()
-                        imsave(__imagePath + ".jpg", __image)
-                        with Image.open(__imagePath) as __image:
-                            __imageHashDict = generateHash(__hashAlgorithmString, __imageHashDict, __imagePath, __image, __hashSizeInt)
-                            writeDatabase(__databasePath, __imageHashDict)
-                        remove(__imagepath + ".jpg")
-                else:
-                    with Image.open(__imagePath) as __image:
-                        __imageHashDict = generateHash(__hashAlgorithmString, __imageHashDict, __imagePath, __image, __hashSizeInt)
-                        writeDatabase(__databasePath, __imageHashDict)
-        else:
+        if __imagePath not in __imageHashDict.keys():
             print("Hashing " + str(__imagePath))
             if checkRaw(__imagePath):
                 if path.isfile(__imagePath + ".jpg"):
@@ -253,7 +226,7 @@ def generateHashDict(__imagePathList, __hashAlgorithmString, __hashSizeInt, __da
                     __image = imread(__imagePath)
                     __image = __image.postprocess()
                     imsave(__imagePath + ".jpg", __image)
-                    with Image.open(__imagePath) as __image:
+                    with Image.open(__imagePath + ".jpg") as __image:
                         __imageHashDict = generateHash(__hashAlgorithmString, __imageHashDict, __imagePath, __image, __hashSizeInt)
                         writeDatabase(__databasePath, __imageHashDict)
                     remove(__imagePath + ".jpg")
