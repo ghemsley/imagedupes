@@ -31,8 +31,9 @@ optional arguments:
                         comparisons. Argument should be the path to which you
                         want to save or read from the database. Warning:
                         runnning the program multiple times with the same
-                        database but a different hash algorithm will lead to
-                        problems. Defaults to no database if not specified.
+                        database but a different hash algorithm (or different
+                        hash size) will lead to missed matches. Defaults to no
+                        database if not specified.
   -l, --links           Follow symbolic links. Defaults to off if not
                         specified.
   -o OPTIONS, --options OPTIONS
