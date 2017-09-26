@@ -34,7 +34,8 @@ def checkHashAlgorithmChoice(__hashAlgorithmString):
 def getImagePaths(__directoryPath, __recursiveBoolean, __followLinksBoolean, __rawsBoolean, __hashAlgorithmString):
     "Creates a list of image paths within a given directory"
 
-    import os
+    from os import walk
+    from os import path
 
     __filePathList = []
 
@@ -44,7 +45,7 @@ def getImagePaths(__directoryPath, __recursiveBoolean, __followLinksBoolean, __r
     if __directoryPath is not None:
         if __recursiveBoolean == True:
             if __rawsBoolean == True:
-                for __root, __dirs, __files in os.walk(__directoryPath, followlinks=__followLinksBoolean):
+                for __root, __dirs, __files in walk(__directoryPath, followlinks=__followLinksBoolean):
                     for __file in __files:
                         if str(__file).lower().endswith(".jpg") or str(__file).lower().endswith(".jpeg")\
                         or str(__file).lower().endswith(".png") or str(__file).lower().endswith(".tif")\
@@ -56,9 +57,9 @@ def getImagePaths(__directoryPath, __recursiveBoolean, __followLinksBoolean, __r
                         or str(__file).lower().endswith(".nef") or str(__file).lower().endswith(".dng")\
                         or str(__file).lower().endswith(".raf") or str(__file).lower().endswith(".dcr")\
                         or str(__file).lower().endswith(".mos") or str(__file).lower().endswith(".kdc"):
-                            __filePathList.append(os.path.join(__root, __file))
+                            __filePathList.append(path.normcase(path.abspath(path.expanduser(path.expandvars(path.join(__root, __file))))))
             else:
-                for __root, __dirs, __files in os.walk(__directoryPath, followlinks=__followLinksBoolean):
+                for __root, __dirs, __files in walk(__directoryPath, followlinks=__followLinksBoolean):
                     for __file in __files:
                         if str(__file).lower().endswith(".jpg") or str(__file).lower().endswith(".jpeg")\
                         or str(__file).lower().endswith(".png") or str(__file).lower().endswith(".tif")\
@@ -66,7 +67,7 @@ def getImagePaths(__directoryPath, __recursiveBoolean, __followLinksBoolean, __r
                         or str(__file).lower().endswith(".bmp") or str(__file).lower().endswith(".jp2")\
                         or str(__file).lower().endswith(".j2k") or str(__file).lower().endswith(".jpf")\
                         or str(__file).lower().endswith(".jpx") or str(__file).lower().endswith(".jpm"):
-                            __filePathList.append(os.path.join(__root, __file))
+                            __filePathList.append(path.normcase(path.abspath(path.expanduser(path.expandvars(path.join(__root, __file))))))
         else:
             if __rawsBoolean == True:
                 for __file in os.listdir(__directoryPath):
@@ -80,7 +81,7 @@ def getImagePaths(__directoryPath, __recursiveBoolean, __followLinksBoolean, __r
                     or str(__file).lower().endswith(".nef") or str(__file).lower().endswith(".dng")\
                     or str(__file).lower().endswith(".raf") or str(__file).lower().endswith(".dcr")\
                     or str(__file).lower().endswith(".mos") or str(__file).lower().endswith(".kdc"):
-                        __filePathList.append(os.path.join(__directoryPath, __file))
+                        __filePathList.append(path.normcase(path.abspath(path.expanduser(path.expandvars(path.join(__directoryPath, __file))))))
             else:
                 for __file in os.listdir(__directoryPath):
                     if str(__file).lower().endswith(".jpg") or str(__file).lower().endswith(".jpeg")\
@@ -89,11 +90,11 @@ def getImagePaths(__directoryPath, __recursiveBoolean, __followLinksBoolean, __r
                     or str(__file).lower().endswith(".bmp") or str(__file).lower().endswith(".jp2")\
                     or str(__file).lower().endswith(".j2k") or str(__file).lower().endswith(".jpf")\
                     or str(__file).lower().endswith(".jpx") or str(__file).lower().endswith(".jpm"):
-                        __filePathList.append(os.path.join(__directoryPath, __file))
+                        __filePathList.append(path.normcase(path.abspath(path.expanduser(path.expandvars(path.join(__directoryPath, __file))))))
     else:
         if __recursiveBoolean == True:
             if __rawsBoolean == True:
-                for __root, __dirs, __files in os.walk(os.path.curdir, followlinks=__followLinksBoolean):
+                for __root, __dirs, __files in walk(path.curdir, followlinks=__followLinksBoolean):
                     for __file in __files:
                         if str(__file).lower().endswith(".jpg") or str(__file).lower().endswith(".jpeg")\
                         or str(__file).lower().endswith(".png") or str(__file).lower().endswith(".tif")\
@@ -105,9 +106,9 @@ def getImagePaths(__directoryPath, __recursiveBoolean, __followLinksBoolean, __r
                         or str(__file).lower().endswith(".nef") or str(__file).lower().endswith(".dng")\
                         or str(__file).lower().endswith(".raf") or str(__file).lower().endswith(".dcr")\
                         or str(__file).lower().endswith(".mos") or str(__file).lower().endswith(".kdc"):
-                            __filePathList.append(os.path.join(__root, __file))
+                            __filePathList.append(path.normcase(path.abspath(path.expanduser(path.expandvars(path.join(__root, __file))))))
             else:
-                for __root, __dirs, __files in os.walk(os.path.curdir, followlinks=__followLinksBoolean):
+                for __root, __dirs, __files in walk(path.curdir, followlinks=__followLinksBoolean):
                     for __file in __files:
                         if str(__file).lower().endswith(".jpg") or str(__file).lower().endswith(".jpeg")\
                         or str(__file).lower().endswith(".png") or str(__file).lower().endswith(".tif")\
@@ -115,10 +116,10 @@ def getImagePaths(__directoryPath, __recursiveBoolean, __followLinksBoolean, __r
                         or str(__file).lower().endswith(".bmp") or str(__file).lower().endswith(".jp2")\
                         or str(__file).lower().endswith(".j2k") or str(__file).lower().endswith(".jpf")\
                         or str(__file).lower().endswith(".jpx") or str(__file).lower().endswith(".jpm"):
-                            __filePathList.append(os.path.join(__root, __file))
+                            __filePathList.append(path.normcase(path.abspath(path.expanduser(path.expandvars(path.join(__root, __file))))))
         else:
             if __rawsBoolean == True:
-                for __file in os.listdir(os.path.curdir):
+                for __file in os.listdir(path.curdir):
                     if str(__file).lower().endswith(".jpg") or str(__file).lower().endswith(".jpeg")\
                     or str(__file).lower().endswith(".png") or str(__file).lower().endswith(".tif")\
                     or str(__file).lower().endswith(".tiff") or str(__file).lower().endswith(".webp")\
@@ -129,16 +130,16 @@ def getImagePaths(__directoryPath, __recursiveBoolean, __followLinksBoolean, __r
                     or str(__file).lower().endswith(".nef") or str(__file).lower().endswith(".dng")\
                     or str(__file).lower().endswith(".raf") or str(__file).lower().endswith(".dcr")\
                     or str(__file).lower().endswith(".mos") or str(__file).lower().endswith(".kdc"):
-                        __filePathList.append(os.path.join(os.path.curdir, __file))
+                        __filePathList.append(path.normcase(path.abspath(path.expanduser(path.expandvars(path.join(path.curdir, __file))))))
             else:
-                for __file in os.listdir(os.path.curdir):
+                for __file in os.listdir(path.curdir):
                     if str(__file).lower().endswith(".jpg") or str(__file).lower().endswith(".jpeg")\
                     or str(__file).lower().endswith(".png") or str(__file).lower().endswith(".tif")\
                     or str(__file).lower().endswith(".tiff") or str(__file).lower().endswith(".webp")\
                     or str(__file).lower().endswith(".bmp") or str(__file).lower().endswith(".jp2")\
                     or str(__file).lower().endswith(".j2k") or str(__file).lower().endswith(".jpf")\
                     or str(__file).lower().endswith(".jpx") or str(__file).lower().endswith(".jpm"):
-                        __filePathList.append(os.path.join(os.path.curdir, __file))
+                        __filePathList.append(path.normcase(path.abspath(path.expanduser(path.expandvars(path.join(path.curdir, __file))))))
     return __filePathList
 
 def readDatabase(__databasePath):
