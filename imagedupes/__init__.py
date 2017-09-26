@@ -224,10 +224,26 @@ def readDatabase(__databasePath):
 
 def checkRaw(__imagePath):
 
-    if str(__imagePath).lower().endswith(".crw") or str(__imagePath).lower().endswith(".cr2")\
-    or str(__imagePath).lower().endswith(".nef") or str(__imagePath).lower().endswith(".dng")\
-    or str(__imagePath).lower().endswith(".raf") or str(__imagePath).lower().endswith(".dcr")\
-    or str(__imagePath).lower().endswith(".mos") or str(__imagePath).lower().endswith(".kdc"):
+    if str(__imagePath).lower().endswith(".3fr") or str(__imagePath).lower().endswith(".ari")\
+    or str(__imagePath).lower().endswith(".arw") or str(__imagePath).lower().endswith(".bay")\
+    or str(__imagePath).lower().endswith(".crw") or str(__imagePath).lower().endswith(".cr2")\
+    or str(__imagePath).lower().endswith(".cap") or str(__imagePath).lower().endswith(".data")\
+    or str(__imagePath).lower().endswith(".dcs") or str(__imagePath).lower().endswith(".dcr")\
+    or str(__imagePath).lower().endswith(".dng") or str(__imagePath).lower().endswith(".drf")\
+    or str(__imagePath).lower().endswith(".eip") or str(__imagePath).lower().endswith(".erf")\
+    or str(__imagePath).lower().endswith(".fff") or str(__imagePath).lower().endswith(".gpr")\
+    or str(__imagePath).lower().endswith(".iiq") or str(__imagePath).lower().endswith(".k25")\
+    or str(__imagePath).lower().endswith(".kdc") or str(__imagePath).lower().endswith(".mdc")\
+    or str(__imagePath).lower().endswith(".mef") or str(__imagePath).lower().endswith(".mos")\
+    or str(__imagePath).lower().endswith(".mrw") or str(__imagePath).lower().endswith(".nef")\
+    or str(__imagePath).lower().endswith(".nrw") or str(__imagePath).lower().endswith(".obm")\
+    or str(__imagePath).lower().endswith(".orf") or str(__imagePath).lower().endswith(".pef")\
+    or str(__imagePath).lower().endswith(".ptx") or str(__imagePath).lower().endswith(".pxn")\
+    or str(__imagePath).lower().endswith(".r3d") or str(__imagePath).lower().endswith(".raf")\
+    or str(__imagePath).lower().endswith(".raw") or str(__imagePath).lower().endswith(".rwl")\
+    or str(__imagePath).lower().endswith(".rw2") or str(__imagePath).lower().endswith(".rwz")\
+    or str(__imagePath).lower().endswith(".sr2") or str(__imagePath).lower().endswith(".srf")\
+    or str(__imagePath).lower().endswith(".srw") or str(__imagePath).lower().endswith(".x3f"):
         return True
     else:
         return False
