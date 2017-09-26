@@ -53,10 +53,26 @@ def getImagePaths(__directoryPath, __recursiveBoolean, __followLinksBoolean, __r
                         or str(__file).lower().endswith(".bmp") or str(__file).lower().endswith(".jp2")\
                         or str(__file).lower().endswith(".j2k") or str(__file).lower().endswith(".jpf")\
                         or str(__file).lower().endswith(".jpx") or str(__file).lower().endswith(".jpm")\
+                        or str(__file).lower().endswith(".3fr") or str(__file).lower().endswith(".ari")\
+                        or str(__file).lower().endswith(".arw") or str(__file).lower().endswith(".bay")\
                         or str(__file).lower().endswith(".crw") or str(__file).lower().endswith(".cr2")\
-                        or str(__file).lower().endswith(".nef") or str(__file).lower().endswith(".dng")\
-                        or str(__file).lower().endswith(".raf") or str(__file).lower().endswith(".dcr")\
-                        or str(__file).lower().endswith(".mos") or str(__file).lower().endswith(".kdc"):
+                        or str(__file).lower().endswith(".cap") or str(__file).lower().endswith(".data")\
+                        or str(__file).lower().endswith(".dcs") or str(__file).lower().endswith(".dcr")\
+                        or str(__file).lower().endswith(".dng") or str(__file).lower().endswith(".drf")\
+                        or str(__file).lower().endswith(".eip") or str(__file).lower().endswith(".erf")\
+                        or str(__file).lower().endswith(".fff") or str(__file).lower().endswith(".gpr")\
+                        or str(__file).lower().endswith(".iiq") or str(__file).lower().endswith(".k25")\
+                        or str(__file).lower().endswith(".kdc") or str(__file).lower().endswith(".mdc")\
+                        or str(__file).lower().endswith(".mef") or str(__file).lower().endswith(".mos")\
+                        or str(__file).lower().endswith(".mrw") or str(__file).lower().endswith(".nef")\
+                        or str(__file).lower().endswith(".nrw") or str(__file).lower().endswith(".obm")\
+                        or str(__file).lower().endswith(".orf") or str(__file).lower().endswith(".pef")\
+                        or str(__file).lower().endswith(".ptx") or str(__file).lower().endswith(".pxn")\
+                        or str(__file).lower().endswith(".r3d") or str(__file).lower().endswith(".raf")\
+                        or str(__file).lower().endswith(".raw") or str(__file).lower().endswith(".rwl")\
+                        or str(__file).lower().endswith(".rw2") or str(__file).lower().endswith(".rwz")\
+                        or str(__file).lower().endswith(".sr2") or str(__file).lower().endswith(".srf")\
+                        or str(__file).lower().endswith(".srw") or str(__file).lower().endswith(".x3f"):
                             __filePathList.append(path.normcase(path.abspath(path.expanduser(path.expandvars(path.join(__root, __file))))))
             else:
                 for __root, __dirs, __files in walk(__directoryPath, followlinks=__followLinksBoolean):
@@ -77,10 +93,26 @@ def getImagePaths(__directoryPath, __recursiveBoolean, __followLinksBoolean, __r
                     or str(__file).lower().endswith(".bmp") or str(__file).lower().endswith(".jp2")\
                     or str(__file).lower().endswith(".j2k") or str(__file).lower().endswith(".jpf")\
                     or str(__file).lower().endswith(".jpx") or str(__file).lower().endswith(".jpm")\
+                    or str(__file).lower().endswith(".3fr") or str(__file).lower().endswith(".ari")\
+                    or str(__file).lower().endswith(".arw") or str(__file).lower().endswith(".bay")\
                     or str(__file).lower().endswith(".crw") or str(__file).lower().endswith(".cr2")\
-                    or str(__file).lower().endswith(".nef") or str(__file).lower().endswith(".dng")\
-                    or str(__file).lower().endswith(".raf") or str(__file).lower().endswith(".dcr")\
-                    or str(__file).lower().endswith(".mos") or str(__file).lower().endswith(".kdc"):
+                    or str(__file).lower().endswith(".cap") or str(__file).lower().endswith(".data")\
+                    or str(__file).lower().endswith(".dcs") or str(__file).lower().endswith(".dcr")\
+                    or str(__file).lower().endswith(".dng") or str(__file).lower().endswith(".drf")\
+                    or str(__file).lower().endswith(".eip") or str(__file).lower().endswith(".erf")\
+                    or str(__file).lower().endswith(".fff") or str(__file).lower().endswith(".gpr")\
+                    or str(__file).lower().endswith(".iiq") or str(__file).lower().endswith(".k25")\
+                    or str(__file).lower().endswith(".kdc") or str(__file).lower().endswith(".mdc")\
+                    or str(__file).lower().endswith(".mef") or str(__file).lower().endswith(".mos")\
+                    or str(__file).lower().endswith(".mrw") or str(__file).lower().endswith(".nef")\
+                    or str(__file).lower().endswith(".nrw") or str(__file).lower().endswith(".obm")\
+                    or str(__file).lower().endswith(".orf") or str(__file).lower().endswith(".pef")\
+                    or str(__file).lower().endswith(".ptx") or str(__file).lower().endswith(".pxn")\
+                    or str(__file).lower().endswith(".r3d") or str(__file).lower().endswith(".raf")\
+                    or str(__file).lower().endswith(".raw") or str(__file).lower().endswith(".rwl")\
+                    or str(__file).lower().endswith(".rw2") or str(__file).lower().endswith(".rwz")\
+                    or str(__file).lower().endswith(".sr2") or str(__file).lower().endswith(".srf")\
+                    or str(__file).lower().endswith(".srw") or str(__file).lower().endswith(".x3f"):
                         __filePathList.append(path.normcase(path.abspath(path.expanduser(path.expandvars(path.join(__directoryPath, __file))))))
             else:
                 for __file in os.listdir(__directoryPath):
@@ -102,10 +134,26 @@ def getImagePaths(__directoryPath, __recursiveBoolean, __followLinksBoolean, __r
                         or str(__file).lower().endswith(".bmp") or str(__file).lower().endswith(".jp2")\
                         or str(__file).lower().endswith(".j2k") or str(__file).lower().endswith(".jpf")\
                         or str(__file).lower().endswith(".jpx") or str(__file).lower().endswith(".jpm")\
+                        or str(__file).lower().endswith(".3fr") or str(__file).lower().endswith(".ari")\
+                        or str(__file).lower().endswith(".arw") or str(__file).lower().endswith(".bay")\
                         or str(__file).lower().endswith(".crw") or str(__file).lower().endswith(".cr2")\
-                        or str(__file).lower().endswith(".nef") or str(__file).lower().endswith(".dng")\
-                        or str(__file).lower().endswith(".raf") or str(__file).lower().endswith(".dcr")\
-                        or str(__file).lower().endswith(".mos") or str(__file).lower().endswith(".kdc"):
+                        or str(__file).lower().endswith(".cap") or str(__file).lower().endswith(".data")\
+                        or str(__file).lower().endswith(".dcs") or str(__file).lower().endswith(".dcr")\
+                        or str(__file).lower().endswith(".dng") or str(__file).lower().endswith(".drf")\
+                        or str(__file).lower().endswith(".eip") or str(__file).lower().endswith(".erf")\
+                        or str(__file).lower().endswith(".fff") or str(__file).lower().endswith(".gpr")\
+                        or str(__file).lower().endswith(".iiq") or str(__file).lower().endswith(".k25")\
+                        or str(__file).lower().endswith(".kdc") or str(__file).lower().endswith(".mdc")\
+                        or str(__file).lower().endswith(".mef") or str(__file).lower().endswith(".mos")\
+                        or str(__file).lower().endswith(".mrw") or str(__file).lower().endswith(".nef")\
+                        or str(__file).lower().endswith(".nrw") or str(__file).lower().endswith(".obm")\
+                        or str(__file).lower().endswith(".orf") or str(__file).lower().endswith(".pef")\
+                        or str(__file).lower().endswith(".ptx") or str(__file).lower().endswith(".pxn")\
+                        or str(__file).lower().endswith(".r3d") or str(__file).lower().endswith(".raf")\
+                        or str(__file).lower().endswith(".raw") or str(__file).lower().endswith(".rwl")\
+                        or str(__file).lower().endswith(".rw2") or str(__file).lower().endswith(".rwz")\
+                        or str(__file).lower().endswith(".sr2") or str(__file).lower().endswith(".srf")\
+                        or str(__file).lower().endswith(".srw") or str(__file).lower().endswith(".x3f"):
                             __filePathList.append(path.normcase(path.abspath(path.expanduser(path.expandvars(path.join(__root, __file))))))
             else:
                 for __root, __dirs, __files in walk(path.curdir, followlinks=__followLinksBoolean):
@@ -126,10 +174,26 @@ def getImagePaths(__directoryPath, __recursiveBoolean, __followLinksBoolean, __r
                     or str(__file).lower().endswith(".bmp") or str(__file).lower().endswith(".jp2")\
                     or str(__file).lower().endswith(".j2k") or str(__file).lower().endswith(".jpf")\
                     or str(__file).lower().endswith(".jpx") or str(__file).lower().endswith(".jpm")\
+                    or str(__file).lower().endswith(".3fr") or str(__file).lower().endswith(".ari")\
+                    or str(__file).lower().endswith(".arw") or str(__file).lower().endswith(".bay")\
                     or str(__file).lower().endswith(".crw") or str(__file).lower().endswith(".cr2")\
-                    or str(__file).lower().endswith(".nef") or str(__file).lower().endswith(".dng")\
-                    or str(__file).lower().endswith(".raf") or str(__file).lower().endswith(".dcr")\
-                    or str(__file).lower().endswith(".mos") or str(__file).lower().endswith(".kdc"):
+                    or str(__file).lower().endswith(".cap") or str(__file).lower().endswith(".data")\
+                    or str(__file).lower().endswith(".dcs") or str(__file).lower().endswith(".dcr")\
+                    or str(__file).lower().endswith(".dng") or str(__file).lower().endswith(".drf")\
+                    or str(__file).lower().endswith(".eip") or str(__file).lower().endswith(".erf")\
+                    or str(__file).lower().endswith(".fff") or str(__file).lower().endswith(".gpr")\
+                    or str(__file).lower().endswith(".iiq") or str(__file).lower().endswith(".k25")\
+                    or str(__file).lower().endswith(".kdc") or str(__file).lower().endswith(".mdc")\
+                    or str(__file).lower().endswith(".mef") or str(__file).lower().endswith(".mos")\
+                    or str(__file).lower().endswith(".mrw") or str(__file).lower().endswith(".nef")\
+                    or str(__file).lower().endswith(".nrw") or str(__file).lower().endswith(".obm")\
+                    or str(__file).lower().endswith(".orf") or str(__file).lower().endswith(".pef")\
+                    or str(__file).lower().endswith(".ptx") or str(__file).lower().endswith(".pxn")\
+                    or str(__file).lower().endswith(".r3d") or str(__file).lower().endswith(".raf")\
+                    or str(__file).lower().endswith(".raw") or str(__file).lower().endswith(".rwl")\
+                    or str(__file).lower().endswith(".rw2") or str(__file).lower().endswith(".rwz")\
+                    or str(__file).lower().endswith(".sr2") or str(__file).lower().endswith(".srf")\
+                    or str(__file).lower().endswith(".srw") or str(__file).lower().endswith(".x3f"):
                         __filePathList.append(path.normcase(path.abspath(path.expanduser(path.expandvars(path.join(path.curdir, __file))))))
             else:
                 for __file in os.listdir(path.curdir):
