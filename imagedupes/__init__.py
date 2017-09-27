@@ -39,6 +39,8 @@ def getImagePaths(__directoryPath, __recursiveBoolean, __followLinksBoolean, __r
 
     __filePathList = []
 
+    if __directoryPath is not None:
+        __directoryPath = path.normcase(path.normpath(path.abspath(path.expanduser(path.expandvars(__directoryPath)))))
     if __hashAlgorithmString is not None:
         checkHashAlgorithmChoice(__hashAlgorithmString)
     print("Searching for duplicate images...")
@@ -73,7 +75,7 @@ def getImagePaths(__directoryPath, __recursiveBoolean, __followLinksBoolean, __r
                         or str(__file).lower().endswith(".rw2") or str(__file).lower().endswith(".rwz")\
                         or str(__file).lower().endswith(".sr2") or str(__file).lower().endswith(".srf")\
                         or str(__file).lower().endswith(".srw") or str(__file).lower().endswith(".x3f"):
-                            __filePathList.append(path.normcase(path.abspath(path.expanduser(path.expandvars(path.join(__root, __file))))))
+                            __filePathList.append(path.normcase(path.normpath(path.abspath(path.expanduser(path.expandvars(path.join(__root, __file)))))))
             else:
                 for __root, __dirs, __files in walk(__directoryPath, followlinks=__followLinksBoolean):
                     for __file in __files:
@@ -83,7 +85,7 @@ def getImagePaths(__directoryPath, __recursiveBoolean, __followLinksBoolean, __r
                         or str(__file).lower().endswith(".bmp") or str(__file).lower().endswith(".jp2")\
                         or str(__file).lower().endswith(".j2k") or str(__file).lower().endswith(".jpf")\
                         or str(__file).lower().endswith(".jpx") or str(__file).lower().endswith(".jpm"):
-                            __filePathList.append(path.normcase(path.abspath(path.expanduser(path.expandvars(path.join(__root, __file))))))
+                            __filePathList.append(path.normcase(path.normpath(path.abspath(path.expanduser(path.expandvars(path.join(__root, __file)))))))
         else:
             if __rawsBoolean == True:
                 for __file in os.listdir(__directoryPath):
@@ -113,7 +115,7 @@ def getImagePaths(__directoryPath, __recursiveBoolean, __followLinksBoolean, __r
                     or str(__file).lower().endswith(".rw2") or str(__file).lower().endswith(".rwz")\
                     or str(__file).lower().endswith(".sr2") or str(__file).lower().endswith(".srf")\
                     or str(__file).lower().endswith(".srw") or str(__file).lower().endswith(".x3f"):
-                        __filePathList.append(path.normcase(path.abspath(path.expanduser(path.expandvars(path.join(__directoryPath, __file))))))
+                        __filePathList.append(path.normcase(path.normpath(path.abspath(path.expanduser(path.expandvars(path.join(__directoryPath, __file)))))))
             else:
                 for __file in os.listdir(__directoryPath):
                     if str(__file).lower().endswith(".jpg") or str(__file).lower().endswith(".jpeg")\
@@ -122,7 +124,7 @@ def getImagePaths(__directoryPath, __recursiveBoolean, __followLinksBoolean, __r
                     or str(__file).lower().endswith(".bmp") or str(__file).lower().endswith(".jp2")\
                     or str(__file).lower().endswith(".j2k") or str(__file).lower().endswith(".jpf")\
                     or str(__file).lower().endswith(".jpx") or str(__file).lower().endswith(".jpm"):
-                        __filePathList.append(path.normcase(path.abspath(path.expanduser(path.expandvars(path.join(__directoryPath, __file))))))
+                        __filePathList.append(path.normcase(path.normpath(path.abspath(path.expanduser(path.expandvars(path.join(__directoryPath, __file)))))))
     else:
         if __recursiveBoolean == True:
             if __rawsBoolean == True:
@@ -154,7 +156,7 @@ def getImagePaths(__directoryPath, __recursiveBoolean, __followLinksBoolean, __r
                         or str(__file).lower().endswith(".rw2") or str(__file).lower().endswith(".rwz")\
                         or str(__file).lower().endswith(".sr2") or str(__file).lower().endswith(".srf")\
                         or str(__file).lower().endswith(".srw") or str(__file).lower().endswith(".x3f"):
-                            __filePathList.append(path.normcase(path.abspath(path.expanduser(path.expandvars(path.join(__root, __file))))))
+                            __filePathList.append(path.normcase(path.normpath(path.abspath(path.expanduser(path.expandvars(path.join(__root, __file)))))))
             else:
                 for __root, __dirs, __files in walk(path.curdir, followlinks=__followLinksBoolean):
                     for __file in __files:
@@ -164,7 +166,7 @@ def getImagePaths(__directoryPath, __recursiveBoolean, __followLinksBoolean, __r
                         or str(__file).lower().endswith(".bmp") or str(__file).lower().endswith(".jp2")\
                         or str(__file).lower().endswith(".j2k") or str(__file).lower().endswith(".jpf")\
                         or str(__file).lower().endswith(".jpx") or str(__file).lower().endswith(".jpm"):
-                            __filePathList.append(path.normcase(path.abspath(path.expanduser(path.expandvars(path.join(__root, __file))))))
+                            __filePathList.append(path.normcase(path.normpath(path.abspath(path.expanduser(path.expandvars(path.join(__root, __file)))))))
         else:
             if __rawsBoolean == True:
                 for __file in os.listdir(path.curdir):
@@ -194,7 +196,7 @@ def getImagePaths(__directoryPath, __recursiveBoolean, __followLinksBoolean, __r
                     or str(__file).lower().endswith(".rw2") or str(__file).lower().endswith(".rwz")\
                     or str(__file).lower().endswith(".sr2") or str(__file).lower().endswith(".srf")\
                     or str(__file).lower().endswith(".srw") or str(__file).lower().endswith(".x3f"):
-                        __filePathList.append(path.normcase(path.abspath(path.expanduser(path.expandvars(path.join(path.curdir, __file))))))
+                        __filePathList.append(path.normpath(path.normcase(path.abspath(path.expanduser(path.expandvars(path.join(path.curdir, __file)))))))
             else:
                 for __file in os.listdir(path.curdir):
                     if str(__file).lower().endswith(".jpg") or str(__file).lower().endswith(".jpeg")\
@@ -203,7 +205,7 @@ def getImagePaths(__directoryPath, __recursiveBoolean, __followLinksBoolean, __r
                     or str(__file).lower().endswith(".bmp") or str(__file).lower().endswith(".jp2")\
                     or str(__file).lower().endswith(".j2k") or str(__file).lower().endswith(".jpf")\
                     or str(__file).lower().endswith(".jpx") or str(__file).lower().endswith(".jpm"):
-                        __filePathList.append(path.normcase(path.abspath(path.expanduser(path.expandvars(path.join(path.curdir, __file))))))
+                        __filePathList.append(path.normcase(path.normpath(path.abspath(path.expanduser(path.expandvars(path.join(path.curdir, __file)))))))
     return __filePathList
 
 def readDatabase(__databasePath):
@@ -248,7 +250,7 @@ def checkRaw(__imagePath):
     else:
         return False
 
-def generateHash(__hashAlgorithmString, __imageHashDict, __imagePath, __image, __hashSizeInt):
+def calculateHash(__hashAlgorithmString, __imageHashDict, __imagePath, __image, __hashSizeInt):
 
     from imagehash import dhash
     from imagehash import dhash_vertical
@@ -302,19 +304,19 @@ def generateHashDict(__imagePathList, __hashAlgorithmString, __hashSizeInt, __da
             if checkRaw(__imagePath):
                 if path.isfile(__imagePath + ".jpg"):
                     with Image.open(__imagePath + ".jpg") as __image:
-                        __imageHashDict = generateHash(__hashAlgorithmString, __imageHashDict, __imagePath, __image, __hashSizeInt)
+                        __imageHashDict = calculateHash(__hashAlgorithmString, __imageHashDict, __imagePath, __image, __hashSizeInt)
                         writeDatabase(__databasePath, __imageHashDict)
                 else:
                     __image = imread(__imagePath)
                     __image = __image.postprocess()
                     imsave(__imagePath + ".jpg", __image)
                     with Image.open(__imagePath + ".jpg") as __image:
-                        __imageHashDict = generateHash(__hashAlgorithmString, __imageHashDict, __imagePath, __image, __hashSizeInt)
+                        __imageHashDict = calculateHash(__hashAlgorithmString, __imageHashDict, __imagePath, __image, __hashSizeInt)
                         writeDatabase(__databasePath, __imageHashDict)
                     remove(__imagePath + ".jpg")
             else:
                 with Image.open(__imagePath) as __image:
-                    __imageHashDict = generateHash(__hashAlgorithmString, __imageHashDict, __imagePath, __image, __hashSizeInt)
+                    __imageHashDict = calculateHash(__hashAlgorithmString, __imageHashDict, __imagePath, __image, __hashSizeInt)
                     writeDatabase(__databasePath, __imageHashDict)
     return __imageHashDict
 
