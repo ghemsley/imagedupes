@@ -36,6 +36,7 @@ def getImagePaths(__directoryPath, __recursiveBoolean, __followLinksBoolean, __r
 
     from os import walk
     from os import path
+    from os import listdir
 
     __filePathList = []
 
@@ -88,7 +89,7 @@ def getImagePaths(__directoryPath, __recursiveBoolean, __followLinksBoolean, __r
                             __filePathList.append(path.normcase(path.normpath(path.abspath(path.expanduser(path.expandvars(path.join(__root, __file)))))))
         else:
             if __rawsBoolean == True:
-                for __file in os.listdir(__directoryPath):
+                for __file in listdir(__directoryPath):
                     if str(__file).lower().endswith(".jpg") or str(__file).lower().endswith(".jpeg")\
                     or str(__file).lower().endswith(".png") or str(__file).lower().endswith(".tif")\
                     or str(__file).lower().endswith(".tiff") or str(__file).lower().endswith(".webp")\
@@ -117,7 +118,7 @@ def getImagePaths(__directoryPath, __recursiveBoolean, __followLinksBoolean, __r
                     or str(__file).lower().endswith(".srw") or str(__file).lower().endswith(".x3f"):
                         __filePathList.append(path.normcase(path.normpath(path.abspath(path.expanduser(path.expandvars(path.join(__directoryPath, __file)))))))
             else:
-                for __file in os.listdir(__directoryPath):
+                for __file in listdir(__directoryPath):
                     if str(__file).lower().endswith(".jpg") or str(__file).lower().endswith(".jpeg")\
                     or str(__file).lower().endswith(".png") or str(__file).lower().endswith(".tif")\
                     or str(__file).lower().endswith(".tiff") or str(__file).lower().endswith(".webp")\
@@ -169,7 +170,7 @@ def getImagePaths(__directoryPath, __recursiveBoolean, __followLinksBoolean, __r
                             __filePathList.append(path.normcase(path.normpath(path.abspath(path.expanduser(path.expandvars(path.join(__root, __file)))))))
         else:
             if __rawsBoolean == True:
-                for __file in os.listdir(path.curdir):
+                for __file in listdir(path.curdir):
                     if str(__file).lower().endswith(".jpg") or str(__file).lower().endswith(".jpeg")\
                     or str(__file).lower().endswith(".png") or str(__file).lower().endswith(".tif")\
                     or str(__file).lower().endswith(".tiff") or str(__file).lower().endswith(".webp")\
@@ -198,7 +199,7 @@ def getImagePaths(__directoryPath, __recursiveBoolean, __followLinksBoolean, __r
                     or str(__file).lower().endswith(".srw") or str(__file).lower().endswith(".x3f"):
                         __filePathList.append(path.normpath(path.normcase(path.abspath(path.expanduser(path.expandvars(path.join(path.curdir, __file)))))))
             else:
-                for __file in os.listdir(path.curdir):
+                for __file in listdir(path.curdir):
                     if str(__file).lower().endswith(".jpg") or str(__file).lower().endswith(".jpeg")\
                     or str(__file).lower().endswith(".png") or str(__file).lower().endswith(".tif")\
                     or str(__file).lower().endswith(".tiff") or str(__file).lower().endswith(".webp")\
