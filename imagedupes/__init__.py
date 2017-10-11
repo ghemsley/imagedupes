@@ -1,391 +1,516 @@
 #!/usr/bin/python3
+from argparse import ArgumentParser
+from sys import exit
+from os import walk
+from os import path
+from os import listdir
+import shelve
+from imagehash import dhash
+from imagehash import dhash_vertical
+from imagehash import average_hash
+from imagehash import phash
+from imagehash import phash_simple
+from imagehash import whash
+from os import remove
+from rawpy import imread
+from imageio import imsave
+from PIL import Image
+import webbrowser
+import subprocess
 
 def createArgumentParser():
+    "Creates the command line argument parser and the possible arguments/options"
 
-    from argparse import ArgumentParser
+    args = None
+    parser = None
 
-    __args = None
-    __parser = None
+    parser = ArgumentParser(description="Finds visually similar images and opens them in an image viewer, one group of matches at a time. If no options are specified, it defaults to searching the current working directory non-recursively using a perceptual image hash algorithm with a hash size of 8, opens images in the system default image handler (all members of a group of matches at once), and does not follow symbolic links or use a persistent database.")
+    parser.add_argument("-a",
+                        "--algorithm",
+                        type=str,
+                        help="Specify a hash algorithm to use. Acceptable inputs:\n'dhash' (horizontal difference hash),\n'dhash_vertical',\n'ahash' (average hash),\n'phash' (perceptual hash),\n'phash_simple',\n'whash_haar' (Haar wavelet hash),\n'whash_db4' (Daubechles wavelet hash). Defaults to 'phash' if not specified.")
+    parser.add_argument("-d",
+                        "--directory",
+                        type=str,
+                        help="Directory to search for images. Defaults to the current working directory if not specified.")
+    parser.add_argument("-D",
+                        "--database",
+                        type=str,
+                        help="Use a database to cache hash results and speed up hash comparisons. Argument should be the path to which you want to save or read from the database. Warning: runnning the program multiple times with the same database but a different hash algorithm (or different hash size) will lead to missed matches. Defaults to no database if not specified.")
+    parser.add_argument("-l",
+                        "--links",
+                        action="store_true",
+                        help="Follow symbolic links. Defaults to off if not specified.")
+    parser.add_argument("-o",
+                        "--options",
+                        type=str,
+                        help="Option parameters to pass to the program opened by the --program flag. Defaults to no options if not specified.")
+    parser.add_argument("-p",
+                        "--program",
+                        type=str,
+                        help="Program to open the matched images with. Defaults to your system's default image handler if not specified.")
+    parser.add_argument("-r",
+                        "--recursive",
+                        action="store_true",
+                        help="Search through directories recursively. Defaults to off if not specified.")
+    parser.add_argument("-R",
+                        "--raws",
+                        action="store_true",
+                        help="Process and hash raw image files. Note: Very slow. You might want to leave it running overnight for large image sets. Using the --database option in tandem is highly recommended. Defaults to off if not specified.")
+    parser.add_argument("-s",
+                        "--hash_size",
+                        type=int,
+                        help="Resolution of the hash; higher is more sensitive to differences. Some hash algorithms require that it be a power of 2 (2, 4, 8, 16...) so using a power of two is recommended. Defaults to 8 if not specified. Values lower than 8 may not work with some hash algorithms.")
+    args = parser.parse_args()
+    return args
 
-    __parser = ArgumentParser(description="Finds visually similar images and opens them in an image viewer, one group of matches at a time. If no options are specified, it defaults to searching the current working directory non-recursively using a perceptual image hash algorithm with a hash size of 8, opens images in the system default image handler (all members of a group of matches at once), and does not follow symbolic links or use a persistent database.")
-    __parser.add_argument("-a", "--algorithm", type=str, help="Specify a hash algorithm to use. Acceptable inputs:\n'dhash' (horizontal difference hash),\n'dhash_vertical',\n'ahash' (average hash),\n'phash' (perceptual hash),\n'phash_simple',\n'whash_haar' (Haar wavelet hash),\n'whash_db4' (Daubechles wavelet hash). Defaults to 'phash' if not specified.")
-    __parser.add_argument("-d", "--directory", type=str, help="Directory to search for images. Defaults to the current working directory if not specified.")
-    __parser.add_argument("-D", "--database", type=str, help="Use a database to cache hash results and speed up hash comparisons. Argument should be the path to which you want to save or read from the database. Warning: runnning the program multiple times with the same database but a different hash algorithm (or different hash size) will lead to missed matches. Defaults to no database if not specified.")
-    __parser.add_argument("-l", "--links", action="store_true", help="Follow symbolic links. Defaults to off if not specified.")
-    __parser.add_argument("-o", "--options", type=str, help="Option parameters to pass to the program opened by the --program flag. Defaults to no options if not specified.")
-    __parser.add_argument("-p", "--program", type=str, help="Program to open the matched images with. Defaults to your system's default image handler if not specified.")
-    __parser.add_argument("-r", "--recursive", action="store_true", help="Search through directories recursively. Defaults to off if not specified.")
-    __parser.add_argument("-R", "--raws", action="store_true", help="Process and hash raw image files. Note: Very slow. You might want to leave it running overnight for large image sets. Using the --database option in tandem is highly recommended. Defaults to off if not specified.")
-    __parser.add_argument("-s", "--hash_size", type=int, help="Resolution of the hash; higher is more sensitive to differences. Some hash algorithms require that it be a power of 2 (2, 4, 8, 16...) so using a power of two is recommended. Defaults to 8 if not specified. Values lower than 8 may not work with some hash algorithms.")
-    __args = __parser.parse_args()
-    return __args
+def checkHashAlgorithmChoice(hashAlgorithmString):
+    "Checks input for validity against available hash algorithm choices"
 
-def checkHashAlgorithmChoice(__hashAlgorithmString):
+    acceptableChoicesList = None
 
-    from sys import exit
-
-    __acceptableChoicesList = None
-
-    __acceptableChoicesList = ['dhash', 'dhash_vertical', 'ahash', 'phash', 'phash_simple', 'whash_haar', 'whash_db4']
-    if __hashAlgorithmString not in __acceptableChoicesList:
+    acceptableChoicesList = ['dhash',
+                            'dhash_vertical',
+                            'ahash',
+                            'phash',
+                            'phash_simple',
+                            'whash_haar',
+                            'whash_db4']
+    if hashAlgorithmString not in acceptableChoicesList:
         print("Error: please choose a valid hash algorithm. Use the -h command line flag for help.")
         exit()
 
-def getImagePaths(__directoryPath, __recursiveBoolean, __followLinksBoolean, __rawsBoolean, __hashAlgorithmString):
-    "Creates a list of image paths within a given directory"
+def getImagePaths(directoryPath,
+                recursiveBoolean,
+                followLinksBoolean,
+                rawsBoolean,
+                hashAlgorithmString):
+    "Creates a list of image paths within a given directory (possibly recursively)"
 
-    from os import walk
-    from os import path
-    from os import listdir
+    filePathList = []
 
-    __filePathList = []
-
-    if __directoryPath is not None:
-        __directoryPath = path.normcase(path.normpath(path.abspath(path.expanduser(path.expandvars(__directoryPath)))))
-    if __hashAlgorithmString is not None:
-        checkHashAlgorithmChoice(__hashAlgorithmString)
+    if directoryPath is not None:
+        directoryPath = path.normcase(
+                        path.normpath(
+                        path.abspath(
+                        path.expanduser(
+                        path.expandvars(
+                        directoryPath)))))
+    if hashAlgorithmString is not None:
+        checkHashAlgorithmChoice(hashAlgorithmString)
     print("Searching for duplicate images...")
-    if __directoryPath is not None:
-        if __recursiveBoolean == True:
-            if __rawsBoolean == True:
-                for __root, __dirs, __files in walk(__directoryPath, followlinks=__followLinksBoolean):
-                    for __file in __files:
-                        if str(__file).lower().endswith(".jpg") or str(__file).lower().endswith(".jpeg")\
-                        or str(__file).lower().endswith(".png") or str(__file).lower().endswith(".tif")\
-                        or str(__file).lower().endswith(".tiff") or str(__file).lower().endswith(".webp")\
-                        or str(__file).lower().endswith(".bmp") or str(__file).lower().endswith(".jp2")\
-                        or str(__file).lower().endswith(".j2k") or str(__file).lower().endswith(".jpf")\
-                        or str(__file).lower().endswith(".jpx") or str(__file).lower().endswith(".jpm")\
-                        or str(__file).lower().endswith(".3fr") or str(__file).lower().endswith(".ari")\
-                        or str(__file).lower().endswith(".arw") or str(__file).lower().endswith(".bay")\
-                        or str(__file).lower().endswith(".crw") or str(__file).lower().endswith(".cr2")\
-                        or str(__file).lower().endswith(".cap") or str(__file).lower().endswith(".data")\
-                        or str(__file).lower().endswith(".dcs") or str(__file).lower().endswith(".dcr")\
-                        or str(__file).lower().endswith(".dng") or str(__file).lower().endswith(".drf")\
-                        or str(__file).lower().endswith(".eip") or str(__file).lower().endswith(".erf")\
-                        or str(__file).lower().endswith(".fff") or str(__file).lower().endswith(".gpr")\
-                        or str(__file).lower().endswith(".iiq") or str(__file).lower().endswith(".k25")\
-                        or str(__file).lower().endswith(".kdc") or str(__file).lower().endswith(".mdc")\
-                        or str(__file).lower().endswith(".mef") or str(__file).lower().endswith(".mos")\
-                        or str(__file).lower().endswith(".mrw") or str(__file).lower().endswith(".nef")\
-                        or str(__file).lower().endswith(".nrw") or str(__file).lower().endswith(".obm")\
-                        or str(__file).lower().endswith(".orf") or str(__file).lower().endswith(".pef")\
-                        or str(__file).lower().endswith(".ptx") or str(__file).lower().endswith(".pxn")\
-                        or str(__file).lower().endswith(".r3d") or str(__file).lower().endswith(".raf")\
-                        or str(__file).lower().endswith(".raw") or str(__file).lower().endswith(".rwl")\
-                        or str(__file).lower().endswith(".rw2") or str(__file).lower().endswith(".rwz")\
-                        or str(__file).lower().endswith(".sr2") or str(__file).lower().endswith(".srf")\
-                        or str(__file).lower().endswith(".srw") or str(__file).lower().endswith(".x3f"):
-                            __filePathList.append(path.normcase(path.normpath(path.abspath(path.expanduser(path.expandvars(path.join(__root, __file)))))))
+    if directoryPath is not None:
+        if recursiveBoolean == True:
+            if rawsBoolean == True:
+                for root, dirs, files in walk(directoryPath, followlinks=followLinksBoolean):
+                    for file in files:
+                        if str(file).lower().endswith(".jpg") or str(file).lower().endswith(".jpeg")\
+                        or str(file).lower().endswith(".png") or str(file).lower().endswith(".tif")\
+                        or str(file).lower().endswith(".tiff") or str(file).lower().endswith(".webp")\
+                        or str(file).lower().endswith(".bmp") or str(file).lower().endswith(".jp2")\
+                        or str(file).lower().endswith(".j2k") or str(file).lower().endswith(".jpf")\
+                        or str(file).lower().endswith(".jpx") or str(file).lower().endswith(".jpm")\
+                        or str(file).lower().endswith(".3fr") or str(file).lower().endswith(".ari")\
+                        or str(file).lower().endswith(".arw") or str(file).lower().endswith(".bay")\
+                        or str(file).lower().endswith(".crw") or str(file).lower().endswith(".cr2")\
+                        or str(file).lower().endswith(".cap") or str(file).lower().endswith(".data")\
+                        or str(file).lower().endswith(".dcs") or str(file).lower().endswith(".dcr")\
+                        or str(file).lower().endswith(".dng") or str(file).lower().endswith(".drf")\
+                        or str(file).lower().endswith(".eip") or str(file).lower().endswith(".erf")\
+                        or str(file).lower().endswith(".fff") or str(file).lower().endswith(".gpr")\
+                        or str(file).lower().endswith(".iiq") or str(file).lower().endswith(".k25")\
+                        or str(file).lower().endswith(".kdc") or str(file).lower().endswith(".mdc")\
+                        or str(file).lower().endswith(".mef") or str(file).lower().endswith(".mos")\
+                        or str(file).lower().endswith(".mrw") or str(file).lower().endswith(".nef")\
+                        or str(file).lower().endswith(".nrw") or str(file).lower().endswith(".obm")\
+                        or str(file).lower().endswith(".orf") or str(file).lower().endswith(".pef")\
+                        or str(file).lower().endswith(".ptx") or str(file).lower().endswith(".pxn")\
+                        or str(file).lower().endswith(".r3d") or str(file).lower().endswith(".raf")\
+                        or str(file).lower().endswith(".raw") or str(file).lower().endswith(".rwl")\
+                        or str(file).lower().endswith(".rw2") or str(file).lower().endswith(".rwz")\
+                        or str(file).lower().endswith(".sr2") or str(file).lower().endswith(".srf")\
+                        or str(file).lower().endswith(".srw") or str(file).lower().endswith(".x3f"):
+                            filePathList.append(
+                            path.normcase(
+                            path.normpath(
+                            path.abspath(
+                            path.expanduser(
+                            path.expandvars(
+                            path.join(
+                            root, file)))))))
             else:
-                for __root, __dirs, __files in walk(__directoryPath, followlinks=__followLinksBoolean):
-                    for __file in __files:
-                        if str(__file).lower().endswith(".jpg") or str(__file).lower().endswith(".jpeg")\
-                        or str(__file).lower().endswith(".png") or str(__file).lower().endswith(".tif")\
-                        or str(__file).lower().endswith(".tiff") or str(__file).lower().endswith(".webp")\
-                        or str(__file).lower().endswith(".bmp") or str(__file).lower().endswith(".jp2")\
-                        or str(__file).lower().endswith(".j2k") or str(__file).lower().endswith(".jpf")\
-                        or str(__file).lower().endswith(".jpx") or str(__file).lower().endswith(".jpm"):
-                            __filePathList.append(path.normcase(path.normpath(path.abspath(path.expanduser(path.expandvars(path.join(__root, __file)))))))
+                for root, dirs, files in walk(directoryPath, followlinks=followLinksBoolean):
+                    for file in files:
+                        if str(file).lower().endswith(".jpg") or str(file).lower().endswith(".jpeg")\
+                        or str(file).lower().endswith(".png") or str(file).lower().endswith(".tif")\
+                        or str(file).lower().endswith(".tiff") or str(file).lower().endswith(".webp")\
+                        or str(file).lower().endswith(".bmp") or str(file).lower().endswith(".jp2")\
+                        or str(file).lower().endswith(".j2k") or str(file).lower().endswith(".jpf")\
+                        or str(file).lower().endswith(".jpx") or str(file).lower().endswith(".jpm"):
+                            filePathList.append(
+                            path.normcase(
+                            path.normpath(
+                            path.abspath(
+                            path.expanduser(
+                            path.expandvars(
+                            path.join(
+                            root, file)))))))
         else:
-            if __rawsBoolean == True:
-                for __file in listdir(__directoryPath):
-                    if str(__file).lower().endswith(".jpg") or str(__file).lower().endswith(".jpeg")\
-                    or str(__file).lower().endswith(".png") or str(__file).lower().endswith(".tif")\
-                    or str(__file).lower().endswith(".tiff") or str(__file).lower().endswith(".webp")\
-                    or str(__file).lower().endswith(".bmp") or str(__file).lower().endswith(".jp2")\
-                    or str(__file).lower().endswith(".j2k") or str(__file).lower().endswith(".jpf")\
-                    or str(__file).lower().endswith(".jpx") or str(__file).lower().endswith(".jpm")\
-                    or str(__file).lower().endswith(".3fr") or str(__file).lower().endswith(".ari")\
-                    or str(__file).lower().endswith(".arw") or str(__file).lower().endswith(".bay")\
-                    or str(__file).lower().endswith(".crw") or str(__file).lower().endswith(".cr2")\
-                    or str(__file).lower().endswith(".cap") or str(__file).lower().endswith(".data")\
-                    or str(__file).lower().endswith(".dcs") or str(__file).lower().endswith(".dcr")\
-                    or str(__file).lower().endswith(".dng") or str(__file).lower().endswith(".drf")\
-                    or str(__file).lower().endswith(".eip") or str(__file).lower().endswith(".erf")\
-                    or str(__file).lower().endswith(".fff") or str(__file).lower().endswith(".gpr")\
-                    or str(__file).lower().endswith(".iiq") or str(__file).lower().endswith(".k25")\
-                    or str(__file).lower().endswith(".kdc") or str(__file).lower().endswith(".mdc")\
-                    or str(__file).lower().endswith(".mef") or str(__file).lower().endswith(".mos")\
-                    or str(__file).lower().endswith(".mrw") or str(__file).lower().endswith(".nef")\
-                    or str(__file).lower().endswith(".nrw") or str(__file).lower().endswith(".obm")\
-                    or str(__file).lower().endswith(".orf") or str(__file).lower().endswith(".pef")\
-                    or str(__file).lower().endswith(".ptx") or str(__file).lower().endswith(".pxn")\
-                    or str(__file).lower().endswith(".r3d") or str(__file).lower().endswith(".raf")\
-                    or str(__file).lower().endswith(".raw") or str(__file).lower().endswith(".rwl")\
-                    or str(__file).lower().endswith(".rw2") or str(__file).lower().endswith(".rwz")\
-                    or str(__file).lower().endswith(".sr2") or str(__file).lower().endswith(".srf")\
-                    or str(__file).lower().endswith(".srw") or str(__file).lower().endswith(".x3f"):
-                        __filePathList.append(path.normcase(path.normpath(path.abspath(path.expanduser(path.expandvars(path.join(__directoryPath, __file)))))))
+            if rawsBoolean == True:
+                for file in listdir(directoryPath):
+                    if str(file).lower().endswith(".jpg") or str(file).lower().endswith(".jpeg")\
+                    or str(file).lower().endswith(".png") or str(file).lower().endswith(".tif")\
+                    or str(file).lower().endswith(".tiff") or str(file).lower().endswith(".webp")\
+                    or str(file).lower().endswith(".bmp") or str(file).lower().endswith(".jp2")\
+                    or str(file).lower().endswith(".j2k") or str(file).lower().endswith(".jpf")\
+                    or str(file).lower().endswith(".jpx") or str(file).lower().endswith(".jpm")\
+                    or str(file).lower().endswith(".3fr") or str(file).lower().endswith(".ari")\
+                    or str(file).lower().endswith(".arw") or str(file).lower().endswith(".bay")\
+                    or str(file).lower().endswith(".crw") or str(file).lower().endswith(".cr2")\
+                    or str(file).lower().endswith(".cap") or str(file).lower().endswith(".data")\
+                    or str(file).lower().endswith(".dcs") or str(file).lower().endswith(".dcr")\
+                    or str(file).lower().endswith(".dng") or str(file).lower().endswith(".drf")\
+                    or str(file).lower().endswith(".eip") or str(file).lower().endswith(".erf")\
+                    or str(file).lower().endswith(".fff") or str(file).lower().endswith(".gpr")\
+                    or str(file).lower().endswith(".iiq") or str(file).lower().endswith(".k25")\
+                    or str(file).lower().endswith(".kdc") or str(file).lower().endswith(".mdc")\
+                    or str(file).lower().endswith(".mef") or str(file).lower().endswith(".mos")\
+                    or str(file).lower().endswith(".mrw") or str(file).lower().endswith(".nef")\
+                    or str(file).lower().endswith(".nrw") or str(file).lower().endswith(".obm")\
+                    or str(file).lower().endswith(".orf") or str(file).lower().endswith(".pef")\
+                    or str(file).lower().endswith(".ptx") or str(file).lower().endswith(".pxn")\
+                    or str(file).lower().endswith(".r3d") or str(file).lower().endswith(".raf")\
+                    or str(file).lower().endswith(".raw") or str(file).lower().endswith(".rwl")\
+                    or str(file).lower().endswith(".rw2") or str(file).lower().endswith(".rwz")\
+                    or str(file).lower().endswith(".sr2") or str(file).lower().endswith(".srf")\
+                    or str(file).lower().endswith(".srw") or str(file).lower().endswith(".x3f"):
+                        filePathList.append(
+                        path.normcase(
+                        path.normpath(
+                        path.abspath(
+                        path.expanduser(
+                        path.expandvars(
+                        path.join(
+                        directoryPath, file)))))))
             else:
-                for __file in listdir(__directoryPath):
-                    if str(__file).lower().endswith(".jpg") or str(__file).lower().endswith(".jpeg")\
-                    or str(__file).lower().endswith(".png") or str(__file).lower().endswith(".tif")\
-                    or str(__file).lower().endswith(".tiff") or str(__file).lower().endswith(".webp")\
-                    or str(__file).lower().endswith(".bmp") or str(__file).lower().endswith(".jp2")\
-                    or str(__file).lower().endswith(".j2k") or str(__file).lower().endswith(".jpf")\
-                    or str(__file).lower().endswith(".jpx") or str(__file).lower().endswith(".jpm"):
-                        __filePathList.append(path.normcase(path.normpath(path.abspath(path.expanduser(path.expandvars(path.join(__directoryPath, __file)))))))
+                for file in listdir(directoryPath):
+                    if str(file).lower().endswith(".jpg") or str(file).lower().endswith(".jpeg")\
+                    or str(file).lower().endswith(".png") or str(file).lower().endswith(".tif")\
+                    or str(file).lower().endswith(".tiff") or str(file).lower().endswith(".webp")\
+                    or str(file).lower().endswith(".bmp") or str(file).lower().endswith(".jp2")\
+                    or str(file).lower().endswith(".j2k") or str(file).lower().endswith(".jpf")\
+                    or str(file).lower().endswith(".jpx") or str(file).lower().endswith(".jpm"):
+                        filePathList.append(
+                        path.normcase(
+                        path.normpath(
+                        path.abspath(
+                        path.expanduser(
+                        path.expandvars(
+                        path.join(
+                        directoryPath, file)))))))
     else:
-        if __recursiveBoolean == True:
-            if __rawsBoolean == True:
-                for __root, __dirs, __files in walk(path.curdir, followlinks=__followLinksBoolean):
-                    for __file in __files:
-                        if str(__file).lower().endswith(".jpg") or str(__file).lower().endswith(".jpeg")\
-                        or str(__file).lower().endswith(".png") or str(__file).lower().endswith(".tif")\
-                        or str(__file).lower().endswith(".tiff") or str(__file).lower().endswith(".webp")\
-                        or str(__file).lower().endswith(".bmp") or str(__file).lower().endswith(".jp2")\
-                        or str(__file).lower().endswith(".j2k") or str(__file).lower().endswith(".jpf")\
-                        or str(__file).lower().endswith(".jpx") or str(__file).lower().endswith(".jpm")\
-                        or str(__file).lower().endswith(".3fr") or str(__file).lower().endswith(".ari")\
-                        or str(__file).lower().endswith(".arw") or str(__file).lower().endswith(".bay")\
-                        or str(__file).lower().endswith(".crw") or str(__file).lower().endswith(".cr2")\
-                        or str(__file).lower().endswith(".cap") or str(__file).lower().endswith(".data")\
-                        or str(__file).lower().endswith(".dcs") or str(__file).lower().endswith(".dcr")\
-                        or str(__file).lower().endswith(".dng") or str(__file).lower().endswith(".drf")\
-                        or str(__file).lower().endswith(".eip") or str(__file).lower().endswith(".erf")\
-                        or str(__file).lower().endswith(".fff") or str(__file).lower().endswith(".gpr")\
-                        or str(__file).lower().endswith(".iiq") or str(__file).lower().endswith(".k25")\
-                        or str(__file).lower().endswith(".kdc") or str(__file).lower().endswith(".mdc")\
-                        or str(__file).lower().endswith(".mef") or str(__file).lower().endswith(".mos")\
-                        or str(__file).lower().endswith(".mrw") or str(__file).lower().endswith(".nef")\
-                        or str(__file).lower().endswith(".nrw") or str(__file).lower().endswith(".obm")\
-                        or str(__file).lower().endswith(".orf") or str(__file).lower().endswith(".pef")\
-                        or str(__file).lower().endswith(".ptx") or str(__file).lower().endswith(".pxn")\
-                        or str(__file).lower().endswith(".r3d") or str(__file).lower().endswith(".raf")\
-                        or str(__file).lower().endswith(".raw") or str(__file).lower().endswith(".rwl")\
-                        or str(__file).lower().endswith(".rw2") or str(__file).lower().endswith(".rwz")\
-                        or str(__file).lower().endswith(".sr2") or str(__file).lower().endswith(".srf")\
-                        or str(__file).lower().endswith(".srw") or str(__file).lower().endswith(".x3f"):
-                            __filePathList.append(path.normcase(path.normpath(path.abspath(path.expanduser(path.expandvars(path.join(__root, __file)))))))
+        if recursiveBoolean == True:
+            if rawsBoolean == True:
+                for root, dirs, files in walk(path.curdir, followlinks=followLinksBoolean):
+                    for file in files:
+                        if str(file).lower().endswith(".jpg") or str(file).lower().endswith(".jpeg")\
+                        or str(file).lower().endswith(".png") or str(file).lower().endswith(".tif")\
+                        or str(file).lower().endswith(".tiff") or str(file).lower().endswith(".webp")\
+                        or str(file).lower().endswith(".bmp") or str(file).lower().endswith(".jp2")\
+                        or str(file).lower().endswith(".j2k") or str(file).lower().endswith(".jpf")\
+                        or str(file).lower().endswith(".jpx") or str(file).lower().endswith(".jpm")\
+                        or str(file).lower().endswith(".3fr") or str(file).lower().endswith(".ari")\
+                        or str(file).lower().endswith(".arw") or str(file).lower().endswith(".bay")\
+                        or str(file).lower().endswith(".crw") or str(file).lower().endswith(".cr2")\
+                        or str(file).lower().endswith(".cap") or str(file).lower().endswith(".data")\
+                        or str(file).lower().endswith(".dcs") or str(file).lower().endswith(".dcr")\
+                        or str(file).lower().endswith(".dng") or str(file).lower().endswith(".drf")\
+                        or str(file).lower().endswith(".eip") or str(file).lower().endswith(".erf")\
+                        or str(file).lower().endswith(".fff") or str(file).lower().endswith(".gpr")\
+                        or str(file).lower().endswith(".iiq") or str(file).lower().endswith(".k25")\
+                        or str(file).lower().endswith(".kdc") or str(file).lower().endswith(".mdc")\
+                        or str(file).lower().endswith(".mef") or str(file).lower().endswith(".mos")\
+                        or str(file).lower().endswith(".mrw") or str(file).lower().endswith(".nef")\
+                        or str(file).lower().endswith(".nrw") or str(file).lower().endswith(".obm")\
+                        or str(file).lower().endswith(".orf") or str(file).lower().endswith(".pef")\
+                        or str(file).lower().endswith(".ptx") or str(file).lower().endswith(".pxn")\
+                        or str(file).lower().endswith(".r3d") or str(file).lower().endswith(".raf")\
+                        or str(file).lower().endswith(".raw") or str(file).lower().endswith(".rwl")\
+                        or str(file).lower().endswith(".rw2") or str(file).lower().endswith(".rwz")\
+                        or str(file).lower().endswith(".sr2") or str(file).lower().endswith(".srf")\
+                        or str(file).lower().endswith(".srw") or str(file).lower().endswith(".x3f"):
+                            filePathList.append(
+                            path.normcase(
+                            path.normpath(
+                            path.abspath(
+                            path.expanduser(
+                            path.expandvars(
+                            path.join(
+                            root, file)))))))
             else:
-                for __root, __dirs, __files in walk(path.curdir, followlinks=__followLinksBoolean):
-                    for __file in __files:
-                        if str(__file).lower().endswith(".jpg") or str(__file).lower().endswith(".jpeg")\
-                        or str(__file).lower().endswith(".png") or str(__file).lower().endswith(".tif")\
-                        or str(__file).lower().endswith(".tiff") or str(__file).lower().endswith(".webp")\
-                        or str(__file).lower().endswith(".bmp") or str(__file).lower().endswith(".jp2")\
-                        or str(__file).lower().endswith(".j2k") or str(__file).lower().endswith(".jpf")\
-                        or str(__file).lower().endswith(".jpx") or str(__file).lower().endswith(".jpm"):
-                            __filePathList.append(path.normcase(path.normpath(path.abspath(path.expanduser(path.expandvars(path.join(__root, __file)))))))
+                for root, dirs, files in walk(path.curdir, followlinks=followLinksBoolean):
+                    for file in files:
+                        if str(file).lower().endswith(".jpg") or str(file).lower().endswith(".jpeg")\
+                        or str(file).lower().endswith(".png") or str(file).lower().endswith(".tif")\
+                        or str(file).lower().endswith(".tiff") or str(file).lower().endswith(".webp")\
+                        or str(file).lower().endswith(".bmp") or str(file).lower().endswith(".jp2")\
+                        or str(file).lower().endswith(".j2k") or str(file).lower().endswith(".jpf")\
+                        or str(file).lower().endswith(".jpx") or str(file).lower().endswith(".jpm"):
+                            filePathList.append(
+                            path.normcase(
+                            path.normpath(
+                            path.abspath(
+                            path.expanduser(
+                            path.expandvars(
+                            path.join(
+                            root, file)))))))
         else:
-            if __rawsBoolean == True:
-                for __file in listdir(path.curdir):
-                    if str(__file).lower().endswith(".jpg") or str(__file).lower().endswith(".jpeg")\
-                    or str(__file).lower().endswith(".png") or str(__file).lower().endswith(".tif")\
-                    or str(__file).lower().endswith(".tiff") or str(__file).lower().endswith(".webp")\
-                    or str(__file).lower().endswith(".bmp") or str(__file).lower().endswith(".jp2")\
-                    or str(__file).lower().endswith(".j2k") or str(__file).lower().endswith(".jpf")\
-                    or str(__file).lower().endswith(".jpx") or str(__file).lower().endswith(".jpm")\
-                    or str(__file).lower().endswith(".3fr") or str(__file).lower().endswith(".ari")\
-                    or str(__file).lower().endswith(".arw") or str(__file).lower().endswith(".bay")\
-                    or str(__file).lower().endswith(".crw") or str(__file).lower().endswith(".cr2")\
-                    or str(__file).lower().endswith(".cap") or str(__file).lower().endswith(".data")\
-                    or str(__file).lower().endswith(".dcs") or str(__file).lower().endswith(".dcr")\
-                    or str(__file).lower().endswith(".dng") or str(__file).lower().endswith(".drf")\
-                    or str(__file).lower().endswith(".eip") or str(__file).lower().endswith(".erf")\
-                    or str(__file).lower().endswith(".fff") or str(__file).lower().endswith(".gpr")\
-                    or str(__file).lower().endswith(".iiq") or str(__file).lower().endswith(".k25")\
-                    or str(__file).lower().endswith(".kdc") or str(__file).lower().endswith(".mdc")\
-                    or str(__file).lower().endswith(".mef") or str(__file).lower().endswith(".mos")\
-                    or str(__file).lower().endswith(".mrw") or str(__file).lower().endswith(".nef")\
-                    or str(__file).lower().endswith(".nrw") or str(__file).lower().endswith(".obm")\
-                    or str(__file).lower().endswith(".orf") or str(__file).lower().endswith(".pef")\
-                    or str(__file).lower().endswith(".ptx") or str(__file).lower().endswith(".pxn")\
-                    or str(__file).lower().endswith(".r3d") or str(__file).lower().endswith(".raf")\
-                    or str(__file).lower().endswith(".raw") or str(__file).lower().endswith(".rwl")\
-                    or str(__file).lower().endswith(".rw2") or str(__file).lower().endswith(".rwz")\
-                    or str(__file).lower().endswith(".sr2") or str(__file).lower().endswith(".srf")\
-                    or str(__file).lower().endswith(".srw") or str(__file).lower().endswith(".x3f"):
-                        __filePathList.append(path.normpath(path.normcase(path.abspath(path.expanduser(path.expandvars(path.join(path.curdir, __file)))))))
+            if rawsBoolean == True:
+                for file in listdir(path.curdir):
+                    if str(file).lower().endswith(".jpg") or str(file).lower().endswith(".jpeg")\
+                    or str(file).lower().endswith(".png") or str(file).lower().endswith(".tif")\
+                    or str(file).lower().endswith(".tiff") or str(file).lower().endswith(".webp")\
+                    or str(file).lower().endswith(".bmp") or str(file).lower().endswith(".jp2")\
+                    or str(file).lower().endswith(".j2k") or str(file).lower().endswith(".jpf")\
+                    or str(file).lower().endswith(".jpx") or str(file).lower().endswith(".jpm")\
+                    or str(file).lower().endswith(".3fr") or str(file).lower().endswith(".ari")\
+                    or str(file).lower().endswith(".arw") or str(file).lower().endswith(".bay")\
+                    or str(file).lower().endswith(".crw") or str(file).lower().endswith(".cr2")\
+                    or str(file).lower().endswith(".cap") or str(file).lower().endswith(".data")\
+                    or str(file).lower().endswith(".dcs") or str(file).lower().endswith(".dcr")\
+                    or str(file).lower().endswith(".dng") or str(file).lower().endswith(".drf")\
+                    or str(file).lower().endswith(".eip") or str(file).lower().endswith(".erf")\
+                    or str(file).lower().endswith(".fff") or str(file).lower().endswith(".gpr")\
+                    or str(file).lower().endswith(".iiq") or str(file).lower().endswith(".k25")\
+                    or str(file).lower().endswith(".kdc") or str(file).lower().endswith(".mdc")\
+                    or str(file).lower().endswith(".mef") or str(file).lower().endswith(".mos")\
+                    or str(file).lower().endswith(".mrw") or str(file).lower().endswith(".nef")\
+                    or str(file).lower().endswith(".nrw") or str(file).lower().endswith(".obm")\
+                    or str(file).lower().endswith(".orf") or str(file).lower().endswith(".pef")\
+                    or str(file).lower().endswith(".ptx") or str(file).lower().endswith(".pxn")\
+                    or str(file).lower().endswith(".r3d") or str(file).lower().endswith(".raf")\
+                    or str(file).lower().endswith(".raw") or str(file).lower().endswith(".rwl")\
+                    or str(file).lower().endswith(".rw2") or str(file).lower().endswith(".rwz")\
+                    or str(file).lower().endswith(".sr2") or str(file).lower().endswith(".srf")\
+                    or str(file).lower().endswith(".srw") or str(file).lower().endswith(".x3f"):
+                        filePathList.append(
+                        path.normpath(
+                        path.normcase(
+                        path.abspath(
+                        path.expanduser(
+                        path.expandvars(
+                        path.join(
+                        path.curdir, file)))))))
             else:
-                for __file in listdir(path.curdir):
-                    if str(__file).lower().endswith(".jpg") or str(__file).lower().endswith(".jpeg")\
-                    or str(__file).lower().endswith(".png") or str(__file).lower().endswith(".tif")\
-                    or str(__file).lower().endswith(".tiff") or str(__file).lower().endswith(".webp")\
-                    or str(__file).lower().endswith(".bmp") or str(__file).lower().endswith(".jp2")\
-                    or str(__file).lower().endswith(".j2k") or str(__file).lower().endswith(".jpf")\
-                    or str(__file).lower().endswith(".jpx") or str(__file).lower().endswith(".jpm"):
-                        __filePathList.append(path.normcase(path.normpath(path.abspath(path.expanduser(path.expandvars(path.join(path.curdir, __file)))))))
-    return __filePathList
+                for file in listdir(path.curdir):
+                    if str(file).lower().endswith(".jpg") or str(file).lower().endswith(".jpeg")\
+                    or str(file).lower().endswith(".png") or str(file).lower().endswith(".tif")\
+                    or str(file).lower().endswith(".tiff") or str(file).lower().endswith(".webp")\
+                    or str(file).lower().endswith(".bmp") or str(file).lower().endswith(".jp2")\
+                    or str(file).lower().endswith(".j2k") or str(file).lower().endswith(".jpf")\
+                    or str(file).lower().endswith(".jpx") or str(file).lower().endswith(".jpm"):
+                        filePathList.append(
+                        path.normcase(
+                        path.normpath(
+                        path.abspath(
+                        path.expanduser(
+                        path.expandvars(
+                        path.join(
+                        path.curdir, file)))))))
+    return filePathList
 
-def readDatabase(__databasePath):
+def readDatabase(databasePath):
 
-    from os import path
-    import shelve
+    db = None
+    imageHashDict = {}
 
-    __db = None
-    __imageHashDict = {}
+    if databasePath is not None:
+        if path.exists(databasePath):
+            print("Reading from database at " + databasePath)
+            with shelve.open(databasePath, writeback=True) as db:
+                for key in db:
+                    imageHashDict[key] = db[key]
+    return imageHashDict
 
-    if __databasePath is not None:
-        if path.exists(__databasePath):
-            print("Reading from database at " + __databasePath)
-            with shelve.open(__databasePath, writeback=True) as __db:
-                for __key in __db:
-                    __imageHashDict[__key] = __db[__key]
-    return __imageHashDict
+def checkRaw(imagePath):
 
-def checkRaw(__imagePath):
-
-    if str(__imagePath).lower().endswith(".3fr") or str(__imagePath).lower().endswith(".ari")\
-    or str(__imagePath).lower().endswith(".arw") or str(__imagePath).lower().endswith(".bay")\
-    or str(__imagePath).lower().endswith(".crw") or str(__imagePath).lower().endswith(".cr2")\
-    or str(__imagePath).lower().endswith(".cap") or str(__imagePath).lower().endswith(".data")\
-    or str(__imagePath).lower().endswith(".dcs") or str(__imagePath).lower().endswith(".dcr")\
-    or str(__imagePath).lower().endswith(".dng") or str(__imagePath).lower().endswith(".drf")\
-    or str(__imagePath).lower().endswith(".eip") or str(__imagePath).lower().endswith(".erf")\
-    or str(__imagePath).lower().endswith(".fff") or str(__imagePath).lower().endswith(".gpr")\
-    or str(__imagePath).lower().endswith(".iiq") or str(__imagePath).lower().endswith(".k25")\
-    or str(__imagePath).lower().endswith(".kdc") or str(__imagePath).lower().endswith(".mdc")\
-    or str(__imagePath).lower().endswith(".mef") or str(__imagePath).lower().endswith(".mos")\
-    or str(__imagePath).lower().endswith(".mrw") or str(__imagePath).lower().endswith(".nef")\
-    or str(__imagePath).lower().endswith(".nrw") or str(__imagePath).lower().endswith(".obm")\
-    or str(__imagePath).lower().endswith(".orf") or str(__imagePath).lower().endswith(".pef")\
-    or str(__imagePath).lower().endswith(".ptx") or str(__imagePath).lower().endswith(".pxn")\
-    or str(__imagePath).lower().endswith(".r3d") or str(__imagePath).lower().endswith(".raf")\
-    or str(__imagePath).lower().endswith(".raw") or str(__imagePath).lower().endswith(".rwl")\
-    or str(__imagePath).lower().endswith(".rw2") or str(__imagePath).lower().endswith(".rwz")\
-    or str(__imagePath).lower().endswith(".sr2") or str(__imagePath).lower().endswith(".srf")\
-    or str(__imagePath).lower().endswith(".srw") or str(__imagePath).lower().endswith(".x3f"):
+    if str(imagePath).lower().endswith(".3fr") or str(imagePath).lower().endswith(".ari")\
+    or str(imagePath).lower().endswith(".arw") or str(imagePath).lower().endswith(".bay")\
+    or str(imagePath).lower().endswith(".crw") or str(imagePath).lower().endswith(".cr2")\
+    or str(imagePath).lower().endswith(".cap") or str(imagePath).lower().endswith(".data")\
+    or str(imagePath).lower().endswith(".dcs") or str(imagePath).lower().endswith(".dcr")\
+    or str(imagePath).lower().endswith(".dng") or str(imagePath).lower().endswith(".drf")\
+    or str(imagePath).lower().endswith(".eip") or str(imagePath).lower().endswith(".erf")\
+    or str(imagePath).lower().endswith(".fff") or str(imagePath).lower().endswith(".gpr")\
+    or str(imagePath).lower().endswith(".iiq") or str(imagePath).lower().endswith(".k25")\
+    or str(imagePath).lower().endswith(".kdc") or str(imagePath).lower().endswith(".mdc")\
+    or str(imagePath).lower().endswith(".mef") or str(imagePath).lower().endswith(".mos")\
+    or str(imagePath).lower().endswith(".mrw") or str(imagePath).lower().endswith(".nef")\
+    or str(imagePath).lower().endswith(".nrw") or str(imagePath).lower().endswith(".obm")\
+    or str(imagePath).lower().endswith(".orf") or str(imagePath).lower().endswith(".pef")\
+    or str(imagePath).lower().endswith(".ptx") or str(imagePath).lower().endswith(".pxn")\
+    or str(imagePath).lower().endswith(".r3d") or str(imagePath).lower().endswith(".raf")\
+    or str(imagePath).lower().endswith(".raw") or str(imagePath).lower().endswith(".rwl")\
+    or str(imagePath).lower().endswith(".rw2") or str(imagePath).lower().endswith(".rwz")\
+    or str(imagePath).lower().endswith(".sr2") or str(imagePath).lower().endswith(".srf")\
+    or str(imagePath).lower().endswith(".srw") or str(imagePath).lower().endswith(".x3f"):
         return True
     else:
         return False
 
-def calculateHash(__hashAlgorithmString, __imageHashDict, __imagePath, __image, __hashSizeInt):
+def calculateHash(hashAlgorithmString,
+                imageHashDict,
+                imagePath,
+                image,
+                hashSizeInt):
 
-    from imagehash import dhash
-    from imagehash import dhash_vertical
-    from imagehash import average_hash
-    from imagehash import phash
-    from imagehash import phash_simple
-    from imagehash import whash
+    if hashAlgorithmString == 'dhash':
+        imageHashDict[imagePath] = dhash(image, hash_size=hashSizeInt)
+    elif hashAlgorithmString == 'dhash_vertical':
+        imageHashDict[imagePath] = dhash_vertical(image, hash_size=hashSizeInt)
+    elif hashAlgorithmString == 'ahash':
+        imageHashDict[imagePath] = average_hash(image, hash_size=hashSizeInt)
+    elif hashAlgorithmString == 'phash':
+        imageHashDict[imagePath] = phash(image, hash_size=hashSizeInt)
+    elif hashAlgorithmString == 'phash_simple':
+        imageHashDict[imagePath] = phash_simple(image, hash_size=hashSizeInt)
+    elif hashAlgorithmString == 'whash_haar':
+        imageHashDict[imagePath] = whash(image, hash_size=hashSizeInt)
+    elif hashAlgorithmString == 'whash_db4':
+        imageHashDict[imagePath] = whash(image,
+                                        hash_size=hashSizeInt,
+                                        mode='db4')
+    elif hashAlgorithmString == None:
+        imageHashDict[imagePath] = phash(image, hash_size=hashSizeInt)
+    return imageHashDict
 
-    if __hashAlgorithmString == 'dhash':
-        __imageHashDict[__imagePath] = dhash(__image, hash_size=__hashSizeInt)
-    elif __hashAlgorithmString == 'dhash_vertical':
-        __imageHashDict[__imagePath] = dhash_vertical(__image, hash_size=__hashSizeInt)
-    elif __hashAlgorithmString == 'ahash':
-        __imageHashDict[__imagePath] = average_hash(__image, hash_size=__hashSizeInt)
-    elif __hashAlgorithmString == 'phash':
-        __imageHashDict[__imagePath] = phash(__image, hash_size=__hashSizeInt)
-    elif __hashAlgorithmString == 'phash_simple':
-        __imageHashDict[__imagePath] = phash_simple(__image, hash_size=__hashSizeInt)
-    elif __hashAlgorithmString == 'whash_haar':
-        __imageHashDict[__imagePath] = whash(__image, hash_size=__hashSizeInt)
-    elif __hashAlgorithmString == 'whash_db4':
-        __imageHashDict[__imagePath] = whash(__image, hash_size=__hashSizeInt, mode='db4')
-    elif __hashAlgorithmString == None:
-        __imageHashDict[__imagePath] = phash(__image, hash_size=__hashSizeInt)
-    return __imageHashDict
+def writeDatabase(databasePath, imageHashDict):
 
-def writeDatabase(__databasePath, __imageHashDict):
+    if databasePath is not None:
+        with shelve.open(databasePath) as db:
+            for key in imageHashDict:
+                db[key] = imageHashDict[key]
 
-    import shelve
+def generateHashDict(imagePathList,
+                    hashAlgorithmString,
+                    hashSizeInt,
+                    databasePath,
+                    imageHashDict):
 
-    if __databasePath is not None:
-        with shelve.open(__databasePath) as __db:
-            for __key in __imageHashDict:
-                __db[__key] = __imageHashDict[__key]
+    image = None
 
-def generateHashDict(__imagePathList, __hashAlgorithmString, __hashSizeInt, __databasePath, __imageHashDict):
-
-    from os import path
-    from os import remove
-    from rawpy import imread
-    from imageio import imsave
-    from PIL import Image
-
-    __image = None
-
-    if __hashSizeInt == None:
-        __hashSizeInt = 8
-    for __imagePath in __imagePathList:
-        if __imagePath not in __imageHashDict.keys():
-            print("Hashing " + str(__imagePath))
-            if checkRaw(__imagePath):
-                if path.isfile(__imagePath + ".jpg"):
-                    with Image.open(__imagePath + ".jpg") as __image:
-                        __imageHashDict = calculateHash(__hashAlgorithmString, __imageHashDict, __imagePath, __image, __hashSizeInt)
-                        writeDatabase(__databasePath, __imageHashDict)
+    if hashSizeInt == None:
+        hashSizeInt = 8
+    for imagePath in imagePathList:
+        if imagePath not in imageHashDict.keys():
+            print("Hashing " + str(imagePath))
+            if checkRaw(imagePath):
+                if path.isfile(imagePath + ".jpg"):
+                    with Image.open(imagePath + ".jpg") as image:
+                        imageHashDict = calculateHash(hashAlgorithmString,
+                                                    imageHashDict,
+                                                    imagePath,
+                                                    image,
+                                                    hashSizeInt)
+                        writeDatabase(databasePath, imageHashDict)
                 else:
-                    __image = imread(__imagePath)
-                    __image = __image.postprocess()
-                    imsave(__imagePath + ".jpg", __image)
-                    with Image.open(__imagePath + ".jpg") as __image:
-                        __imageHashDict = calculateHash(__hashAlgorithmString, __imageHashDict, __imagePath, __image, __hashSizeInt)
-                        writeDatabase(__databasePath, __imageHashDict)
-                    remove(__imagePath + ".jpg")
+                    image = imread(imagePath)
+                    image = image.postprocess()
+                    imsave(imagePath + ".jpg", image)
+                    with Image.open(imagePath + ".jpg") as image:
+                        imageHashDict = calculateHash(hashAlgorithmString,
+                                                    imageHashDict,
+                                                    imagePath,
+                                                    image,
+                                                    hashSizeInt)
+                        writeDatabase(databasePath, imageHashDict)
+                    remove(imagePath + ".jpg")
             else:
-                with Image.open(__imagePath) as __image:
-                    __imageHashDict = calculateHash(__hashAlgorithmString, __imageHashDict, __imagePath, __image, __hashSizeInt)
-                    writeDatabase(__databasePath, __imageHashDict)
-    return __imageHashDict
+                with Image.open(imagePath) as image:
+                    imageHashDict = calculateHash(hashAlgorithmString,
+                                                imageHashDict,
+                                                imagePath,
+                                                image,
+                                                hashSizeInt)
+                    writeDatabase(databasePath, imageHashDict)
+    return imageHashDict
 
-def pruneDatabase(__databasePath, __imageHashDict):
+def pruneDatabase(databasePath, imageHashDict):
 
-    from os import path
-    import shelve
+    db = None
 
-    __db = None
+    if databasePath is not None:
+        if path.exists(databasePath):
+            with shelve.open(databasePath, writeback=True) as db:
+                for key in db.keys():
+                    if not path.exists(key):
+                        if key in imageHashDict:
+                            del imageHashDict[key]
+                        del db[key]
+                for key in imageHashDict.keys():
+                    if not path.exists(key):
+                        if imageHashDict[key] in db:
+                            del db[key]
+                        del imageHashDict[key]
+    return imageHashDict
 
-    if __databasePath is not None:
-        if path.exists(__databasePath):
-            with shelve.open(__databasePath, writeback=True) as __db:
-                for __key in __db.keys():
-                    if not path.exists(__key):
-                        if __key in __imageHashDict:
-                            del __imageHashDict[__key]
-                        del __db[__key]
-                for __key in __imageHashDict.keys():
-                    if not path.exists(__key):
-                        if __imageHashDict[__key] in __db:
-                            del __db[__key]
-                        del __imageHashDict[__key]
-    return __imageHashDict
+def compareHashes(imageHashDict):
 
-def compareHashes(__imageHashDict):
+    reverseMultiDict = {}
+    duplicateListOfSets = {}
+    duplicateListOfLists = []
 
-    __reverseMultiDict = {}
-    __duplicateListOfSets = {}
-    __duplicateListOfLists = []
+    for key, value in imageHashDict.items():
+        reverseMultiDict.setdefault(value, set()).add(key)
+    duplicateListOfSets = [values for key, values in reverseMultiDict.items() if len(values) > 1]
+    for i in range(0, len(duplicateListOfSets)):
+        duplicateListOfLists.append(list(duplicateListOfSets[i]))
+    return duplicateListOfLists
 
-    for __key, __value in __imageHashDict.items():
-        __reverseMultiDict.setdefault(__value, set()).add(__key)
-    __duplicateListOfSets = [__values for __key, __values in __reverseMultiDict.items() if len(__values) > 1]
-    for __i in range(0, len(__duplicateListOfSets)):
-        __duplicateListOfLists.append(list(__duplicateListOfSets[__i]))
-    return __duplicateListOfLists
+def printDuplicates(imageListOfLists):
 
-def printDuplicates(__imageListOfLists):
+    for i in range(0, len(imageListOfLists)):
+        for j in range(0, len(imageListOfLists[i])):
+            print("Found possible duplicate: " + str(imageListOfLists[i][j]))
+    return imageListOfLists
 
-    for __i in range(0, len(__imageListOfLists)):
-        for __j in range(0, len(__imageListOfLists[__i])):
-            print("Found possible duplicate: " + str(__imageListOfLists[__i][__j]))
-    return __imageListOfLists
+def displayImage(imageListOfLists, viewerCommandString, viewerOptionsString):
 
-def displayImage(__imageListOfLists, __viewerCommandString, __viewerOptionsString):
-
-    import webbrowser
-    import subprocess
-
-    for __i in range(0, len(__imageListOfLists)):
+    for i in range(0, len(imageListOfLists)):
         input("Press enter to open the next set of possible duplicates: ")
-        if __viewerCommandString is None:
-            for __j in range(0, len(__imageListOfLists[__i])):
-                webbrowser.open(__imageListOfLists[__i][__j])
-        elif __viewerCommandString is not None and __viewerOptionsString is None:
-            subprocess.run([__viewerCommandString] + __imageListOfLists[__i])
+        if viewerCommandString is None:
+            for j in range(0, len(imageListOfLists[i])):
+                webbrowser.open(imageListOfLists[i][j])
+        elif viewerCommandString is not None and viewerOptionsString is None:
+            subprocess.run([viewerCommandString] + imageListOfLists[i])
         else:
-            subprocess.run([__viewerCommandString, __viewerOptionsString] + __imageListOfLists[__i])
+            subprocess.run([viewerCommandString, viewerOptionsString]
+                            + imageListOfLists[i])
 
 def main():
 
-    from sys import exit
+    args = None
 
-    __args = None
-
-    __args = createArgumentParser()
-    displayImage(printDuplicates(compareHashes(pruneDatabase(__args.database, generateHashDict(getImagePaths(__args.directory, __args.recursive, __args.links, __args.raws, __args.algorithm), __args.algorithm, __args.hash_size, __args.database, readDatabase(__args.database))))), __args.program, __args.options)
+    args = createArgumentParser()
+    displayImage(
+    printDuplicates(
+    compareHashes(
+    pruneDatabase(
+    args.database,
+    generateHashDict(
+    getImagePaths(
+    args.directory,
+    args.recursive,
+    args.links,
+    args.raws,
+    args.algorithm),
+    args.algorithm,
+    args.hash_size,
+    args.database,
+    readDatabase(
+    args.database))))),
+    args.program,
+    args.options)
     exit()
 
 main()
